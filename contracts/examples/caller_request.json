@@ -1,0 +1,15 @@
+{
+    "external_id": "call-2026-10-16-0001",
+    "channel": "phone_call",
+    "caller_ref": "c-7f3a",
+    "text": "Spots on my bean leaves since the rain",
+    "problem_type": "crop_health",
+    "crop": "beans",
+    "symptoms": [
+        "brown spots",
+        "wilting"
+    ],
+    "location": {
+        "name": "Kiambu"
+    }
+}

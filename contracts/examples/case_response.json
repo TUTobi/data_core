@@ -1,0 +1,57 @@
+{
+    "id": "3382833cb9a94a059a9efa1a2968dbc2",
+    "status": "delivered",
+    "attempts": 1,
+    "last_error": null,
+    "created_at": "2026-10-16T19:39:30.572097Z",
+    "updated_at": "2026-10-16T19:39:30.695885Z",
+    "request": {
+        "id": "24337351675144d5b8a7bf6043bc006e",
+        "external_id": "call-2026-10-16-0001",
+        "channel": "phone_call",
+        "caller_ref": "c-7f3a",
+        "received_at": "2026-10-16T19:39:30.568889Z",
+        "text": "Spots on my bean leaves since the rain",
+        "problem_type": "crop_health",
+        "crop": "beans",
+        "symptoms": [
+            "brown spots",
+            "wilting"
+        ],
+        "lat": -1.17139,
+        "lon": 36.83556,
+        "location_name": "Kiambu",
+        "location_precision_m": 5000.0,
+        "location_source": "geocoded",
+        "reported_event_time": null,
+        "extra": {}
+    },
+    "recommendation": {
+        "disease": "suspected_fungal_disease",
+        "confidence": 0.6,
+        "risk_level": "medium",
+        "explanation": "[MOCK RECOMMENDER] 13 h with humidity >= 90 % in the last 72 h",
+        "actions": [
+            "Inspect leaves for spots, mould or lesions and remove affected plant parts",
+            "Avoid overhead irrigation and improve air flow between plants",
+            "Contact the agricultural extension officer for confirmation and treatment advice"
+        ],
+        "created_at": "2026-10-16T19:39:30.655841Z"
+    },
+    "deliveries": [
+        {
+            "channel": "dashboard",
+            "status": "sent",
+            "attempts": 1,
+            "last_error": null,
+            "sent_at": "2026-10-16T19:39:30.672549Z"
+        },
+        {
+            "channel": "phone",
+            "status": "sent",
+            "attempts": 1,
+            "last_error": null,
+            "sent_at": "2026-10-16T19:39:30.684218Z"
+        }
+    ]
+}

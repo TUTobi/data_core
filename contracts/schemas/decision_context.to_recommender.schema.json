@@ -1,0 +1,715 @@
+{
+  "$defs": {
+    "CallerHistoryEvidence": {
+      "properties": {
+        "radius_km": {
+          "title": "Radius Km",
+          "type": "number"
+        },
+        "lookback_h": {
+          "title": "Lookback H",
+          "type": "integer"
+        },
+        "total_count": {
+          "title": "Total Count",
+          "type": "integer"
+        },
+        "same_problem_count": {
+          "title": "Same Problem Count",
+          "type": "integer"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SimilarReport"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "radius_km",
+        "lookback_h",
+        "total_count",
+        "same_problem_count",
+        "items"
+      ],
+      "title": "CallerHistoryEvidence",
+      "type": "object"
+    },
+    "DataNeed": {
+      "properties": {
+        "source": {
+          "enum": [
+            "sensors",
+            "weather",
+            "caller_history"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "metrics": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metrics"
+        },
+        "radius_km": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius Km"
+        },
+        "lookback_h": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lookback H"
+        },
+        "forecast_h": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Forecast H"
+        },
+        "filters": {
+          "additionalProperties": true,
+          "title": "Filters",
+          "type": "object"
+        },
+        "priority": {
+          "default": "optional",
+          "enum": [
+            "required",
+            "optional"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "title": "DataNeed",
+      "type": "object"
+    },
+    "DataPlan": {
+      "properties": {
+        "strategy": {
+          "title": "Strategy",
+          "type": "string"
+        },
+        "needs": {
+          "items": {
+            "$ref": "#/$defs/DataNeed"
+          },
+          "title": "Needs",
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "strategy",
+        "needs"
+      ],
+      "title": "DataPlan",
+      "type": "object"
+    },
+    "Evidence": {
+      "properties": {
+        "weather": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WeatherEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sensors": {
+          "items": {
+            "$ref": "#/$defs/SensorEvidence"
+          },
+          "title": "Sensors",
+          "type": "array"
+        },
+        "caller_history": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerHistoryEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Location": {
+      "properties": {
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lon"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Village / place; geocoded if no coordinates",
+          "title": "Name"
+        },
+        "precision_m": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision M"
+        }
+      },
+      "title": "Location",
+      "type": "object"
+    },
+    "RequestSummary": {
+      "properties": {
+        "request_id": {
+          "title": "Request Id",
+          "type": "string"
+        },
+        "external_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "External Id"
+        },
+        "channel": {
+          "title": "Channel",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "problem_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Problem Type"
+        },
+        "crop": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Crop"
+        },
+        "symptoms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Symptoms",
+          "type": "array"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Location"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "location_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location Source"
+        },
+        "reported_event_time": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reported Event Time"
+        }
+      },
+      "required": [
+        "request_id",
+        "external_id",
+        "channel",
+        "received_at",
+        "text",
+        "problem_type",
+        "crop",
+        "symptoms",
+        "location",
+        "location_source",
+        "reported_event_time"
+      ],
+      "title": "RequestSummary",
+      "type": "object"
+    },
+    "SensorEvidence": {
+      "properties": {
+        "sensor_id": {
+          "title": "Sensor Id",
+          "type": "string"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "latest_value": {
+          "title": "Latest Value",
+          "type": "number"
+        },
+        "latest_at": {
+          "format": "date-time",
+          "title": "Latest At",
+          "type": "string"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        },
+        "min": {
+          "title": "Min",
+          "type": "number"
+        },
+        "max": {
+          "title": "Max",
+          "type": "number"
+        },
+        "n_readings": {
+          "title": "N Readings",
+          "type": "integer"
+        },
+        "distance_km": {
+          "title": "Distance Km",
+          "type": "number"
+        },
+        "age_s": {
+          "title": "Age S",
+          "type": "integer"
+        },
+        "quality": {
+          "title": "Quality",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sensor_id",
+        "metric",
+        "unit",
+        "latest_value",
+        "latest_at",
+        "mean",
+        "min",
+        "max",
+        "n_readings",
+        "distance_km",
+        "age_s",
+        "quality"
+      ],
+      "title": "SensorEvidence",
+      "type": "object"
+    },
+    "SimilarReport": {
+      "properties": {
+        "request_id": {
+          "title": "Request Id",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "problem_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Problem Type"
+        },
+        "crop": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Crop"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "distance_km": {
+          "title": "Distance Km",
+          "type": "number"
+        },
+        "same_problem_type": {
+          "title": "Same Problem Type",
+          "type": "boolean"
+        },
+        "disease": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Disease"
+        }
+      },
+      "required": [
+        "request_id",
+        "received_at",
+        "problem_type",
+        "crop",
+        "text",
+        "distance_km",
+        "same_problem_type"
+      ],
+      "title": "SimilarReport",
+      "type": "object"
+    },
+    "WeatherEvidence": {
+      "properties": {
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "lat": {
+          "title": "Lat",
+          "type": "number"
+        },
+        "lon": {
+          "title": "Lon",
+          "type": "number"
+        },
+        "fetched_at": {
+          "format": "date-time",
+          "title": "Fetched At",
+          "type": "string"
+        },
+        "from_cache": {
+          "default": false,
+          "title": "From Cache",
+          "type": "boolean"
+        },
+        "current": {
+          "additionalProperties": true,
+          "title": "Current",
+          "type": "object"
+        },
+        "past": {
+          "$ref": "#/$defs/WeatherWindow"
+        },
+        "forecast": {
+          "$ref": "#/$defs/WeatherWindow"
+        },
+        "daily": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Daily",
+          "type": "array"
+        }
+      },
+      "required": [
+        "provider",
+        "lat",
+        "lon",
+        "fetched_at",
+        "past",
+        "forecast"
+      ],
+      "title": "WeatherEvidence",
+      "type": "object"
+    },
+    "WeatherWindow": {
+      "properties": {
+        "hours": {
+          "title": "Hours",
+          "type": "integer"
+        },
+        "n_points": {
+          "default": 0,
+          "title": "N Points",
+          "type": "integer"
+        },
+        "precipitation_mm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precipitation Mm"
+        },
+        "mean_temp_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mean Temp C"
+        },
+        "min_temp_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Temp C"
+        },
+        "max_temp_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Temp C"
+        },
+        "mean_rh_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mean Rh Pct"
+        },
+        "hours_rh_ge_90": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hours with relative humidity >= 90 % (leaf-wetness proxy)",
+          "title": "Hours Rh Ge 90"
+        },
+        "mean_soil_moisture": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mean Soil Moisture"
+        }
+      },
+      "required": [
+        "hours"
+      ],
+      "title": "WeatherWindow",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "request": {
+      "$ref": "#/$defs/RequestSummary"
+    },
+    "plan": {
+      "$ref": "#/$defs/DataPlan"
+    },
+    "evidence": {
+      "$ref": "#/$defs/Evidence"
+    },
+    "gaps": {
+      "description": "Data that was wanted but is unavailable",
+      "items": {
+        "type": "string"
+      },
+      "title": "Gaps",
+      "type": "array"
+    },
+    "warnings": {
+      "description": "Caveats: mocked, stale or approximate data",
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "generated_at",
+    "request",
+    "plan",
+    "evidence"
+  ],
+  "title": "DecisionContext",
+  "type": "object"
+}

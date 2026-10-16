@@ -1,0 +1,119 @@
+{
+  "$defs": {
+    "SensorReadingIn": {
+      "description": "One measurement as posted by a field device (e.g. the Raspberry Pi).",
+      "examples": [
+        {
+          "lat": -1.2921,
+          "lon": 36.8219,
+          "metrics": {
+            "humidity_pct": 87.5,
+            "temperature_c": 22.4
+          },
+          "recorded_at": "2026-10-16T14:00:00Z",
+          "sensor_id": "pi-field-01"
+        }
+      ],
+      "properties": {
+        "sensor_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Sensor Id",
+          "type": "string"
+        },
+        "recorded_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Measurement time; defaults to time of receipt",
+          "title": "Recorded At"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Falls back to the registered sensor position",
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lon"
+        },
+        "metrics": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "metric name -> value, e.g. humidity_pct",
+          "minProperties": 1,
+          "title": "Metrics",
+          "type": "object"
+        },
+        "units": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional units; inferred from suffix",
+          "title": "Units",
+          "type": "object"
+        },
+        "quality": {
+          "default": "ok",
+          "enum": [
+            "ok",
+            "suspect",
+            "mocked"
+          ],
+          "title": "Quality",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sensor_id",
+        "metrics"
+      ],
+      "title": "SensorReadingIn",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "readings": {
+      "items": {
+        "$ref": "#/$defs/SensorReadingIn"
+      },
+      "maxItems": 1000,
+      "minItems": 1,
+      "title": "Readings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "readings"
+  ],
+  "title": "SensorReadingBatch",
+  "type": "object"
+}

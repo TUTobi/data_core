@@ -1,0 +1,61 @@
+# Local full stack: data-core API + Postgres + mock recommender + mock webhook receiver.
+#   docker compose up --build
+#   python mocks/pi_simulator.py --backfill-hours 24 --count 3
+#   curl -X POST localhost:8000/v1/requests -H "X-API-Key: dev-input-key" -H "Content-Type: application/json" \
+#        -d '{"text":"My crops are dying since the heavy rains","problem_type":"crop_health","lat":-1.2921,"lon":36.8219}'
+#   curl localhost:8002/received
+# Keys below are development placeholders only.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: datacore
+      POSTGRES_PASSWORD: datacore
+      POSTGRES_DB: datacore
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datacore"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://datacore:datacore@db:5432/datacore
+      CREATE_TABLES_ON_STARTUP: "false"
+      PI_KEYS: dev-pi-key
+      INPUT_KEYS: dev-input-key
+      DASHBOARD_KEYS: dev-dashboard-key
+      INTERNAL_KEYS: dev-internal-key
+      WEATHER_PROVIDER: open_meteo
+      RECOMMENDER_MODE: http
+      RECOMMENDER_URL: http://recommender:8001/predict
+      DASHBOARD_WEBHOOK_URL: http://webhook-sink:8002/hooks/dashboard
+      PHONE_WEBHOOK_URL: http://webhook-sink:8002/hooks/phone
+      WEBHOOK_SECRET: dev-webhook-secret
+
+  recommender:
+    build: .
+    command: uvicorn mocks.mock_recommender:app --host 0.0.0.0 --port 8001
+    ports: ["8001:8001"]
+
+  webhook-sink:
+    build: .
+    command: uvicorn mocks.mock_webhook_sink:app --host 0.0.0.0 --port 8002
+    environment:
+      WEBHOOK_SECRET: dev-webhook-secret
+    ports: ["8002:8002"]
+
+  # Stand-in for the cron that Azure / Vercel would run in production.
+  ticker:
+    image: curlimages/curl:8.10.1
+    depends_on: [api]
+    entrypoint: ["sh", "-c", "while true; do sleep 60; curl -s -X POST -H 'X-API-Key: dev-internal-key' http://api:8000/internal/tick; echo; done"]
+
+volumes:
+  pgdata:

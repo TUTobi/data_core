@@ -1,0 +1,243 @@
+{
+  "$defs": {
+    "Location": {
+      "properties": {
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lon"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Village / place; geocoded if no coordinates",
+          "title": "Name"
+        },
+        "precision_m": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision M"
+        }
+      },
+      "title": "Location",
+      "type": "object"
+    },
+    "RecommendationResult": {
+      "additionalProperties": true,
+      "description": "Response expected from the external recommender. Extra fields are allowed and stored raw.",
+      "examples": [
+        {
+          "actions": [
+            "Remove infected leaves",
+            "Contact the extension officer"
+          ],
+          "confidence": 0.72,
+          "disease": "late_blight",
+          "explanation": "Prolonged leaf wetness and several similar reports nearby.",
+          "risk_level": "high"
+        }
+      ],
+      "properties": {
+        "disease": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Predicted disease/problem; null if none identified",
+          "title": "Disease"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "risk_level": {
+          "default": "unknown",
+          "description": "low | medium | high | unknown",
+          "title": "Risk Level",
+          "type": "string"
+        },
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation"
+        },
+        "actions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "title": "RecommendationResult",
+      "type": "object"
+    }
+  },
+  "description": "Body POSTed to the dashboard and the phone system once a recommendation exists.\n\nHeaders: X-DataCore-Event, X-DataCore-Delivery and (if a secret is configured)\nX-DataCore-Signature: sha256=<hex HMAC-SHA256 of the raw body>.",
+  "properties": {
+    "event": {
+      "const": "case.recommended",
+      "default": "case.recommended",
+      "title": "Event",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "request_id": {
+      "title": "Request Id",
+      "type": "string"
+    },
+    "external_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "External Id"
+    },
+    "channel": {
+      "title": "Channel",
+      "type": "string"
+    },
+    "caller_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Caller Ref"
+    },
+    "problem_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Problem Type"
+    },
+    "location": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Location"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recommendation": {
+      "$ref": "#/$defs/RecommendationResult"
+    },
+    "evidence_summary": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Summary",
+      "type": "array"
+    },
+    "gaps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Gaps",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "request_id",
+    "external_id",
+    "channel",
+    "caller_ref",
+    "problem_type",
+    "location",
+    "recommendation",
+    "created_at"
+  ],
+  "title": "WebhookPayload",
+  "type": "object"
+}

@@ -1,0 +1,39 @@
+{
+  "event": "case.recommended",
+  "case_id": "3382833cb9a94a059a9efa1a2968dbc2",
+  "request_id": "24337351675144d5b8a7bf6043bc006e",
+  "external_id": "call-2026-10-16-0001",
+  "channel": "phone_call",
+  "caller_ref": "c-7f3a",
+  "problem_type": "crop_health",
+  "location": {
+    "lat": -1.17139,
+    "lon": 36.83556,
+    "name": "Kiambu",
+    "precision_m": 5000.0
+  },
+  "recommendation": {
+    "disease": "suspected_fungal_disease",
+    "confidence": 0.6,
+    "risk_level": "medium",
+    "explanation": "[MOCK RECOMMENDER] 13 h with humidity >= 90 % in the last 72 h",
+    "actions": [
+      "Inspect leaves for spots, mould or lesions and remove affected plant parts",
+      "Avoid overhead irrigation and improve air flow between plants",
+      "Contact the agricultural extension officer for confirmation and treatment advice"
+    ],
+    "model": "mock-heuristic-v0"
+  },
+  "evidence_summary": [
+    "Weather (open_meteo), last 72 h: 5.8 mm rain, mean humidity 73.25 %, 13 h with humidity >= 90 %",
+    "Sensor pi-field-01: humidity_pct = 75.7% (0.404 km away, 0 min old)",
+    "Sensor pi-field-01: temperature_c = 22.3\u00c2\u00b0C (0.404 km away, 0 min old)",
+    "1 similar of 1 reports within 10 km in the last 72 h"
+  ],
+  "gaps": [],
+  "warnings": [
+    "Location approximated from place name 'Kiambu'",
+    "Some sensor data is mocked"
+  ],
+  "created_at": "2026-10-16T19:39:30.654026Z"
+}

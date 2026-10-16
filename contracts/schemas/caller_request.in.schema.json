@@ -1,0 +1,222 @@
+{
+  "$defs": {
+    "Location": {
+      "properties": {
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lon"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Village / place; geocoded if no coordinates",
+          "title": "Name"
+        },
+        "precision_m": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision M"
+        }
+      },
+      "title": "Location",
+      "type": "object"
+    }
+  },
+  "description": "Structured caller input from the phone/Telegram workstream.\n\nThe layout is not final: aliases (e.g. `description`, `latitude`, `source`) are accepted and\nunknown fields are kept in `extra` - see data_core.input.adapters.",
+  "examples": [
+    {
+      "caller_ref": "c-7f3a",
+      "channel": "phone_call",
+      "crop": "maize",
+      "external_id": "call-2026-10-16-0001",
+      "location": {
+        "lat": -1.2921,
+        "lon": 36.8219,
+        "precision_m": 2000
+      },
+      "problem_type": "crop_health",
+      "symptoms": [
+        "wilting",
+        "yellow leaves"
+      ],
+      "text": "My crops have started dying since the heavy rains."
+    }
+  ],
+  "properties": {
+    "external_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Idempotency key from the input system",
+      "title": "External Id"
+    },
+    "channel": {
+      "default": "unknown",
+      "maxLength": 32,
+      "title": "Channel",
+      "type": "string"
+    },
+    "caller_ref": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Pseudonymous caller id",
+      "title": "Caller Ref"
+    },
+    "received_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Received At"
+    },
+    "text": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "problem_type": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Problem Type"
+    },
+    "crop": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Crop"
+    },
+    "symptoms": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Symptoms",
+      "type": "array"
+    },
+    "location": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Location"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reported_event_time": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reported Event Time"
+    },
+    "callback_url": {
+      "anyOf": [
+        {
+          "format": "uri",
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Where the phone system wants the result pushed",
+      "title": "Callback Url"
+    },
+    "extra": {
+      "additionalProperties": true,
+      "title": "Extra",
+      "type": "object"
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "title": "CallerRequestIn",
+  "type": "object"
+}

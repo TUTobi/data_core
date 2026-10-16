@@ -1,0 +1,192 @@
+{
+    "schema_version": "1.0",
+    "case_id": "3382833cb9a94a059a9efa1a2968dbc2",
+    "generated_at": "2026-10-16T19:39:30.597725Z",
+    "request": {
+        "request_id": "24337351675144d5b8a7bf6043bc006e",
+        "external_id": "call-2026-10-16-0001",
+        "channel": "phone_call",
+        "received_at": "2026-10-16T19:39:30.568889Z",
+        "text": "Spots on my bean leaves since the rain",
+        "problem_type": "crop_health",
+        "crop": "beans",
+        "symptoms": [
+            "brown spots",
+            "wilting"
+        ],
+        "location": {
+            "lat": -1.17139,
+            "lon": 36.83556,
+            "name": "Kiambu",
+            "precision_m": 5000.0
+        },
+        "location_source": "geocoded",
+        "reported_event_time": null
+    },
+    "plan": {
+        "strategy": "fetch_all",
+        "needs": [
+            {
+                "source": "weather",
+                "metrics": null,
+                "radius_km": null,
+                "lookback_h": 72,
+                "forecast_h": 48,
+                "filters": {},
+                "priority": "optional",
+                "reason": "Recent and forecast weather (humidity, rain, temperature) drive crop-disease risk"
+            },
+            {
+                "source": "sensors",
+                "metrics": null,
+                "radius_km": 10.0,
+                "lookback_h": 72,
+                "forecast_h": null,
+                "filters": {},
+                "priority": "optional",
+                "reason": "Local field measurements near the caller"
+            },
+            {
+                "source": "caller_history",
+                "metrics": null,
+                "radius_km": 10.0,
+                "lookback_h": 72,
+                "forecast_h": null,
+                "filters": {},
+                "priority": "optional",
+                "reason": "Similar reports nearby may indicate a regional outbreak"
+            }
+        ],
+        "notes": [
+            "Baseline strategy: the final data-selection logic is not decided yet"
+        ]
+    },
+    "evidence": {
+        "weather": {
+            "provider": "open_meteo",
+            "lat": -1.1599298,
+            "lon": 36.83754,
+            "fetched_at": "2026-10-16T19:39:30.615084Z",
+            "from_cache": false,
+            "current": {
+                "temperature_2m": 16.4,
+                "relative_humidity_2m": 95,
+                "precipitation": 0.1,
+                "wind_speed_10m": 10.0
+            },
+            "past": {
+                "hours": 72,
+                "n_points": 72,
+                "precipitation_mm": 5.8,
+                "mean_temp_c": 18.6,
+                "min_temp_c": 14.0,
+                "max_temp_c": 25.7,
+                "mean_rh_pct": 73.25,
+                "hours_rh_ge_90": 13,
+                "mean_soil_moisture": 0.21
+            },
+            "forecast": {
+                "hours": 48,
+                "n_points": 48,
+                "precipitation_mm": 5.0,
+                "mean_temp_c": 19.05,
+                "min_temp_c": 15.3,
+                "max_temp_c": 24.6,
+                "mean_rh_pct": 73.5,
+                "hours_rh_ge_90": 16,
+                "mean_soil_moisture": 0.26
+            },
+            "daily": [
+                {
+                    "date": "2026-10-13",
+                    "temperature_2m_max": 26.2,
+                    "temperature_2m_min": 13.0,
+                    "precipitation_sum": 0.0
+                },
+                {
+                    "date": "2026-10-14",
+                    "temperature_2m_max": 26.8,
+                    "temperature_2m_min": 14.0,
+                    "precipitation_sum": 0.6
+                },
+                {
+                    "date": "2026-10-15",
+                    "temperature_2m_max": 22.5,
+                    "temperature_2m_min": 14.7,
+                    "precipitation_sum": 2.8
+                },
+                {
+                    "date": "2026-10-16",
+                    "temperature_2m_max": 23.9,
+                    "temperature_2m_min": 13.9,
+                    "precipitation_sum": 5.4
+                },
+                {
+                    "date": "2026-10-17",
+                    "temperature_2m_max": 24.6,
+                    "temperature_2m_min": 15.3,
+                    "precipitation_sum": 1.0
+                },
+                {
+                    "date": "2026-10-18",
+                    "temperature_2m_max": 23.8,
+                    "temperature_2m_min": 15.3,
+                    "precipitation_sum": 1.2
+                }
+            ]
+        },
+        "sensors": [
+            {
+                "sensor_id": "pi-field-01",
+                "metric": "humidity_pct",
+                "unit": "%",
+                "latest_value": 75.7,
+                "latest_at": "2026-10-16T19:39:29Z",
+                "mean": 80.731,
+                "min": 75.7,
+                "max": 86.8,
+                "n_readings": 13,
+                "distance_km": 0.404,
+                "age_s": 1,
+                "quality": "mocked"
+            },
+            {
+                "sensor_id": "pi-field-01",
+                "metric": "temperature_c",
+                "unit": "\u00c2\u00b0C",
+                "latest_value": 22.3,
+                "latest_at": "2026-10-16T19:39:29Z",
+                "mean": 22.969,
+                "min": 22.3,
+                "max": 23.8,
+                "n_readings": 13,
+                "distance_km": 0.404,
+                "age_s": 1,
+                "quality": "mocked"
+            }
+        ],
+        "caller_history": {
+            "radius_km": 10.0,
+            "lookback_h": 72,
+            "total_count": 1,
+            "same_problem_count": 1,
+            "items": [
+                {
+                    "request_id": "64ffda4159674a79a73e901fd324768f",
+                    "received_at": "2026-10-16T19:39:29.869923Z",
+                    "problem_type": "crop_health",
+                    "crop": null,
+                    "text": "Leaves turning yellow",
+                    "distance_km": 1.077,
+                    "same_problem_type": true,
+                    "disease": "suspected_fungal_disease"
+                }
+            ]
+        }
+    },
+    "gaps": [],
+    "warnings": [
+        "Location approximated from place name 'Kiambu'",
+        "Some sensor data is mocked"
+    ]
+}

@@ -1,6 +1,6 @@
 # Data-Sync & Core — Subsystem Specification
 
-> **Status:** Draft / living document · **Owner:** Data-Sync & Core workstream · **Last updated:** 2026-10-16
+> **Status:** MVP implemented · living document · **Owner:** Data-Sync & Core workstream · **Last updated:** 2026-10-16
 
 ---
 
@@ -9,448 +9,355 @@
 | File | Scope | Audience |
 |---|---|---|
 | [`project_overview.md`](project_overview.md) | The **whole hackathon project**: the *Farmer Advisory & Early-Warning System*. It describes the end-to-end concept (farmer calls → transcription → structured report → context → recommendation → spoken answer + officer dashboard), the overall architecture, the team split and the shared API contracts. It is the shared reference for **all** workstreams. | Whole team |
-| [`project.md`](project.md) (this file) | The **Data-Sync & Core subsystem only** — the part of the system that continuously accumulates data from field sensors and external APIs, receives structured requests, decides *which* data is relevant for a request, and assembles it into a *decision context* for the recommendation system. It refines sections **3.B–3.D** of the overview and roughly covers the ownership of persons 3 and 4 in the team table. | Developers of this subsystem and the teams that integrate with it |
+| [`project.md`](project.md) (this file) | The **Data-Sync & Core subsystem only**: ingesting sensor data and caller requests, storing them, deciding *which* data a request needs, gathering it (database + weather API), handing it to the recommender, and delivering the result to the dashboard and phone system. It refines sections **3.B–3.D** of the overview (persons 2–4 in the team table). | Developers of this subsystem and the teams that integrate with it |
+| [`README.md`](README.md) | How to run, test and migrate the code. | Developers |
+| [`contracts/`](contracts) | Machine-readable JSON schemas and **real example payloads** for every interface. | Other workstreams |
+| [`deploy/`](deploy) | Deployment guides for Azure and Vercel. | Whoever deploys |
 
-Rule of thumb: if something concerns *how the parts fit together*, it belongs in `project_overview.md`. If it concerns *how this subsystem works internally or what its interfaces look like*, it belongs here. When the two disagree, the overview wins for cross-team contracts and this file should be updated.
+Rule of thumb: anything about *how the parts fit together* belongs in `project_overview.md`. Anything about *how this subsystem works or what its interfaces look like* belongs here. If the two disagree, the overview wins for cross-team contracts and this file gets updated.
 
 ---
 
 ## 1. Purpose and scope
 
-The Data-Sync & Core subsystem has three jobs:
-
-1. **Data accumulation (sync)** — Periodically poll a set of *modular* data sources (field sensors such as rain gauges on Raspberry Pis, weather APIs, …), normalise their output and persist it, so that recent measurements are always available locally — even if a source is temporarily unreachable.
-2. **Request-driven data acquisition** — When a structured request arrives (originating from a phone call, Telegram message, etc.), pull exactly the information relevant to *that* request: current/forecast weather for the location, stored sensor readings nearby, and previous reports from other callers in the area.
-3. **The core (decision) layer** — Decide **what data is needed** for the recommendation system for a given request, orchestrate its acquisition, and hand over a structured, evidence-rich **decision context**.
-
 ### 1.1 In scope
+1. **Ingestion:** REST endpoints that receive
+   - structured caller requests (JSON from the phone/Telegram workstream), and
+   - sensor readings that the **Raspberry Pi pushes** (humidity, temperature, location, …).
 
-- Pluggable source adapters + polling scheduler (the *accumulator*).
-- Mock implementations of field sensors (real Raspberry Pi integration later).
-- Weather API adapter(s) (Open-Meteo as default).
-- Access layer for the report database (previous caller inputs and their locations).
-- An input adapter that accepts the structured request in whatever shape is eventually agreed.
-- The data-needs decision core and the decision-context output format.
+   Both are stored in the database.
+2. **Database:** sensors and readings, all previous caller requests with their location, decision contexts, recommendations, delivery state, and a weather cache.
+3. **Core:** decides which data a request needs (the *data plan*), then gathers it:
+   - nearby sensor readings and similar previous callers from the DB,
+   - weather from the **weather API** (Open-Meteo; more APIs can be plugged in).
+
+   It assembles all of this into a **DecisionContext**.
+4. **Recommender round-trip:** sends the DecisionContext to the external recommender (crop-disease prediction, explanation, recommended actions) and stores the answer.
+5. **Delivery:** pushes the result to the **dashboard** and back to the **phone system** (signed webhooks, retried until delivered). It also exposes read endpoints the dashboard can poll.
 
 ### 1.2 Out of scope
-
-- Telephony, speech-to-text, text-to-speech, Telegram bots — handled by another workstream. **We simply receive the structured request.**
-- The LLM-based extraction that turns a transcript into the structured request.
-- The recommendation logic itself (risk rules, advice wording) — we *feed* it.
-- The officer dashboard (we may expose data it reads, but don't build it).
+- Telephony, speech-to-text/text-to-speech, Telegram bots, and the LLM extraction that produces the structured request.
+- The recommendation model itself. We feed it and consume its answer; `mocks/mock_recommender.py` is only a stand-in.
+- The dashboard UI. We push events to it and offer read APIs.
 
 ---
 
-## 2. Position in the overall system
+## 2. Architecture
 
 ```mermaid
 flowchart LR
-    subgraph External["Other workstreams"]
-        IN["Phone / Telegram / ...<br/>(speech + LLM extraction)"]
-        REC["Recommendation system"]
+    subgraph EXT["Other workstreams (out of scope)"]
+        PHONE["Phone / Telegram<br/>(STT + LLM extraction)"]
+        REC["Recommender<br/>(crop-disease model)"]
         DASH["Officer dashboard"]
     end
+    PI["Raspberry Pi<br/>(humidity, location)"]
+    WX["Weather API<br/>(Open-Meteo, + more later)"]
 
-    subgraph DSC["Data-Sync & Core (this repo)"]
-        IA["Input adapter"]
-        CORE["Core: data-needs decision"]
-        ACQ["Request-driven acquisition"]
-        ACC["Accumulator<br/>(scheduled polling)"]
-        STORE[("Local store<br/>readings / reports")]
+    subgraph DC["data-core (this repo) — one stateless FastAPI service"]
+        ING["Ingestion<br/>/v1/sensor-readings<br/>/v1/requests"]
+        CORE["Core<br/>planner → retrieval → context"]
+        RC["Recommender client"]
+        OUT["Delivery<br/>(transactional outbox)"]
+        READ["Read API<br/>/v1/cases, /v1/observations"]
+        TICK["/internal/tick<br/>(cron: retries)"]
     end
+    DB[("PostgreSQL<br/>(SQLite locally)")]
 
-    SENS["Field sensors<br/>(Raspberry Pi, mocked)"]
-    WX["Weather APIs"]
-    DB[("Report DB<br/>previous callers + locations")]
-
-    IN -->|structured request| IA --> CORE
-    CORE -->|data plan| ACQ
-    ACQ --> STORE
-    ACQ --> WX
-    ACQ --> DB
-    ACC -->|poll| SENS
-    ACC -->|poll| WX
-    ACC --> STORE
-    ACQ -->|decision context| REC
-    STORE --> DASH
+    PI -->|POST readings| ING
+    PHONE -->|POST structured request| ING
+    ING --> DB
+    ING --> CORE
+    CORE <-->|sensors, previous callers| DB
+    CORE <-->|cached| WX
+    CORE --> RC
+    RC <-->|DecisionContext → Recommendation| REC
+    RC --> DB
+    DB --> OUT
+    OUT -->|signed webhook| DASH
+    OUT -->|signed webhook / HTTP response| PHONE
+    DASH -->|poll| READ
+    TICK --> OUT
 ```
 
-The subsystem has two "clocks":
+### 2.1 Key design decisions
 
-- **Time-driven** (accumulator): runs continuously in the background, independent of any request.
-- **Event-driven** (core + acquisition): runs once per incoming request.
+| # | Decision | Why |
+|---|---|---|
+| 1 | **One stateless FastAPI service. No in-process background workers.** All state is in the DB. | The same code runs in Docker, on Azure Container Apps/App Service, and as a Vercel serverless function. |
+| 2 | **Sensors push** (`POST /v1/sensor-readings`) instead of us polling the Pi. | The Pi is often behind NAT or on mobile networks and can't be reached from outside. Push also works serverless. Ingestion is idempotent, so the Pi can resend safely. |
+| 3 | **Synchronous pipeline per request** with state stored after every step (`received → context_built → recommended → delivered`). | The caller is still on the line, so the answer comes back in the HTTP response. If a step fails, the case can be resumed from its last good state with no queue required. |
+| 4 | **Transactional outbox** for webhooks, retried by `/internal/tick` with exponential backoff. | A short dashboard or phone-system outage never loses a result. |
+| 5 | **Weather cache in the DB** (~1 km grid, TTL 15 min) plus retry on 5xx/429. | Fewer API calls and faster answers. Unlike an in-memory cache, it also works across serverless instances. |
+| 6 | **Graceful degradation:** a failing optional source becomes a `gap` in the context and the pipeline continues. | A degraded answer beats no answer for a farmer on the phone. Verified live: an Open-Meteo 503 led to a recorded gap and the result was still delivered. |
+| 7 | **Postgres** (SQLAlchemy 2 + Alembic). Spatial search = bounding-box SQL prefilter + Haversine in Python. | Portable across Azure PG Flexible Server, Neon/Supabase (Vercel) and SQLite. No PostGIS needed. *The overview suggests Azure SQL; Postgres was chosen for portability (see §9).* |
+| 8 | **Pluggable components**, all selected by env vars: planner, weather provider, recommender (HTTP/mock), geocoder. | Mocks and real systems are interchangeable, so every team can work in parallel. |
+| 9 | **API keys per client role** (`pi`, `input`, `dashboard`, `internal`) via `X-API-Key` or `Authorization: Bearer`. Outgoing webhooks are HMAC-SHA256-signed. | Simple, works with Vercel Cron, and receivers can verify where a webhook came from. |
+| 10 | **Tolerant input adapter.** Aliases like `description`, `latitude` and `source` are mapped; unknown fields are kept in `extra`. | The final input layout is not decided. Format changes then touch one file (`input/adapters.py`), not the core. |
 
----
-
-## 3. Architecture
-
-### 3.1 Components
-
-| Component | Responsibility |
-|---|---|
-| **Source adapters** | One adapter per data source. Each knows how to fetch from its source and convert results into the common `Observation` format. Adapters are interchangeable (mock ↔ real). |
-| **Source registry** | Holds all configured adapters, keyed by id. New sources are added via configuration, not by changing the core. |
-| **Accumulator / scheduler** | Polls each registered *pollable* source at its own interval, handles retries/backoff, writes results to the store, tracks source health. |
-| **Store** | Persistence for normalised observations (and access to the report DB). Answers spatial/temporal queries ("readings within 5 km over the last 72 h"). |
-| **Input adapter** | Converts the incoming request (format TBD) into the internal `IncomingRequest` model. Swappable per channel/format version. |
-| **Core — data-needs planner** | Given an `IncomingRequest`, decides which data is required → produces a `DataPlan`. **Decision logic is not defined yet** (see §6.3). |
-| **Acquisition executor** | Executes a `DataPlan`: queries the store, calls live APIs where fresh data is required, queries the report DB, collects results + metadata (age, distance, quality, source). |
-| **Context assembler** | Builds the final `DecisionContext` handed to the recommendation system, including evidence, uncertainty and gaps. |
-
-### 3.2 Proposed directory layout
+### 2.2 Code layout
 
 ```text
-data_core/
-├── project_overview.md          # whole-project overview (shared)
-├── project.md                   # this file
-├── README.md
-├── pyproject.toml
-├── config/
-│   ├── sources.yaml             # which sources exist, intervals, mock/real
-│   └── planner.yaml             # planner strategy + parameters (radii, windows…)
-├── src/data_core/
-│   ├── models/                  # pydantic models: Observation, IncomingRequest, DataPlan, DecisionContext
-│   ├── sources/
-│   │   ├── base.py              # DataSource protocol
-│   │   ├── registry.py
-│   │   ├── sensors/
-│   │   │   ├── rain_mock.py     # mocked Raspberry-Pi rain sensor
-│   │   │   └── rain_rpi.py      # real implementation (later)
-│   │   ├── weather/
-│   │   │   └── open_meteo.py
-│   │   └── reports/
-│   │       └── report_db.py     # previous caller inputs + locations
-│   ├── accumulator/
-│   │   └── scheduler.py         # polling loop, backoff, health
-│   ├── store/
-│   │   ├── repository.py        # spatial/temporal queries
-│   │   └── schema.sql
-│   ├── input/
-│   │   ├── base.py              # InputAdapter protocol
-│   │   └── v0_generic.py        # tolerant adapter for the not-yet-final format
-│   ├── core/
-│   │   ├── planner.py           # DataNeedsPlanner protocol + strategies
-│   │   ├── executor.py          # executes a DataPlan
-│   │   └── context.py           # builds DecisionContext
-│   └── api/
-│       └── app.py               # FastAPI endpoints
-└── tests/
-    ├── fixtures/                # sample requests, sensor payloads, weather responses
-    └── ...
-```
-
-Tech stack is aligned with the overview: **Python + FastAPI**, **pydantic** models, SQL (SQLite locally, Azure SQL in deployment), **Open-Meteo** for weather, `httpx` for HTTP, `APScheduler` or a plain `asyncio` loop for polling.
-
----
-
-## 4. Data sources (modular)
-
-### 4.1 The source contract
-
-Every source implements the same small interface so that the accumulator and the core never depend on concrete sources:
-
-```python
-class DataSource(Protocol):
-    id: str                      # e.g. "rain_sensor_field_01", "open_meteo"
-    kind: SourceKind             # SENSOR | WEATHER | REPORTS | ...
-    pollable: bool               # True → accumulator polls it periodically
-    poll_interval_s: int | None
-
-    async def poll(self) -> list[Observation]:
-        """Fetch the latest data (used by the accumulator)."""
-
-    async def query(self, q: SourceQuery) -> list[Observation]:
-        """On-demand fetch for a location/time window (used by the core)."""
-
-    async def health(self) -> SourceHealth:
-        """Reachability, last success, last error."""
-```
-
-All sources emit the same normalised record:
-
-```python
-class Observation(BaseModel):
-    source_id: str
-    kind: SourceKind
-    metric: str                  # "rainfall_mm", "temperature_c", "soil_moisture_pct", ...
-    value: float | str
-    unit: str | None
-    observed_at: datetime        # when it was measured (UTC)
-    ingested_at: datetime        # when we stored it
-    latitude: float | None
-    longitude: float | None
-    quality: Quality             # OK | SUSPECT | MOCKED | STALE
-    raw: dict | None             # original payload for traceability
-```
-
-Adding a new source = writing one adapter + one entry in `config/sources.yaml`. Nothing in the core changes.
-
-### 4.2 Planned sources
-
-| Source | Kind | Mode | Status | Notes |
-|---|---|---|---|---|
-| Rain sensor (Raspberry Pi) | SENSOR | polled | **mocked** | Mock generates plausible rainfall series per sensor location; real version will read from the Pi (HTTP/MQTT — TBD). Mocked data is flagged `quality=MOCKED`. |
-| Further field sensors (soil moisture, temperature, turbidity, …) | SENSOR | polled | planned | Same contract; added when hardware/mocks exist. |
-| Open-Meteo | WEATHER | polled + on-demand | planned | Polled for a fixed set of points of interest (sensor sites, villages); queried on-demand for arbitrary request locations (current, recent history, forecast). |
-| Additional weather API | WEATHER | on-demand | optional | Fallback / cross-check. |
-| Report DB (previous callers) | REPORTS | on-demand | planned | The maintained database of all previous inputs from callers incl. location, time, problem type. Owned jointly with the SQL workstream. |
-
-### 4.3 Example config
-
-```yaml
-# config/sources.yaml
-sources:
-  - id: rain_sensor_field_01
-    type: rain_mock            # swap to rain_rpi when hardware is ready
-    location: { lat: -1.2921, lon: 36.8219 }
-    poll_interval_s: 60
-  - id: open_meteo
-    type: open_meteo
-    poll_interval_s: 900
-    poll_points:
-      - { name: demo_village, lat: -1.29, lon: 36.82 }
-  - id: report_db
-    type: report_db
-    dsn: ${REPORT_DB_DSN}
+src/data_core/
+  main.py, asgi.py          app factory / ASGI entrypoint
+  config.py                 all settings (env vars, 12-factor)
+  services.py               wires planner, weather, recommender, geocoder from settings
+  db/                       SQLAlchemy models + engine/session        (alembic/ = migrations)
+  schemas/                  pydantic contracts: sensors, requests, context, recommendation, cases, webhooks
+  input/adapters.py         tolerant mapping of the (not yet final) caller-request layout
+  ingestion/                sensor + request persistence (idempotent, geocoding of place names)
+  providers/                weather (Open-Meteo, mock, DB cache) and geocoding (Open-Meteo)
+  core/planner.py           DataNeedsPlanner interface + `fetch_all` baseline   ← decision logic TBD
+  core/retrieval.py         nearby sensor aggregates, similar previous caller reports
+  core/context.py           executes the DataPlan → DecisionContext (gaps, warnings)
+  core/pipeline.py          case state machine, resume/retry
+  recommender/              HTTP client + mock
+  delivery/outbox.py        webhooks with HMAC signature, backoff, delivery status
+  api/                      REST routers + auth
+mocks/                      mock recommender, mock webhook receiver, Raspberry Pi simulator
+contracts/                  JSON schemas (scripts/export_schemas.py) + real example payloads
+tests/                      API, pipeline, weather and adapter tests (SQLite + respx)
+deploy/                     Azure and Vercel guides;  Dockerfile, docker-compose.yml, vercel.json
 ```
 
 ---
 
-## 5. The accumulator (scheduled polling)
-
-- Runs as a background task inside the FastAPI app (one process for the hackathon, as recommended in the overview).
-- Each pollable source has its **own interval**; a slow or failing source must never block the others.
-- On failure: exponential backoff, record the error in `SourceHealth`, keep serving the last known data (marked `STALE` once it exceeds a configurable max age).
-- **Idempotent writes**: `(source_id, metric, observed_at, lat, lon)` is unique, so re-polling doesn't create duplicates.
-- Exposes health/freshness so the core can tell the recommendation system "sensor data is 3 h old" rather than silently using it.
+## 3. Data flow of one caller request
 
 ```mermaid
 sequenceDiagram
-    participant S as Scheduler
-    participant A as Source adapter
-    participant DB as Store
-    loop every poll_interval_s (per source)
-        S->>A: poll()
-        alt success
-            A-->>S: list[Observation]
-            S->>DB: upsert observations
-            S->>S: update health (last_success)
-        else error / timeout
-            A-->>S: exception
-            S->>S: backoff, update health (last_error)
-        end
-    end
-```
-
----
-
-## 6. Request-driven acquisition and the core
-
-### 6.1 Incoming request (format not final)
-
-The request reaches us **already structured**, but containing natural-language content (e.g. extracted from a phone call or a Telegram message by another workstream). **The exact layout will be decided later**, so the subsystem must be tolerant and adjustable:
-
-- An `InputAdapter` per format/version maps the raw payload to the internal `IncomingRequest`.
-- Unknown fields are preserved in `extra`, not rejected.
-- Missing fields (e.g. no coordinates) are allowed and reported as gaps rather than causing errors.
-
-Current working model (subject to change):
-
-```python
-class IncomingRequest(BaseModel):
-    request_id: str
-    channel: str                    # "phone_call", "telegram", ...
-    received_at: datetime
-    caller_id: str | None           # pseudonymous
-    text: str                       # natural-language description / summary
-    problem_type: str | None        # e.g. "crop_health", "flooding", "water_quality"
-    symptoms: list[str] = []
-    location: Location | None       # lat/lon and/or village name + precision
-    reported_event_time: datetime | None
-    extra: dict = {}                # anything not (yet) mapped
-```
-
-Example (aligned with the overview's example report):
-
-```json
-{
-  "request_id": "r-2026-10-16-0001",
-  "channel": "phone_call",
-  "received_at": "2026-10-16T14:30:00Z",
-  "text": "My crops have started dying since the heavy rains.",
-  "problem_type": "crop_health",
-  "symptoms": ["wilting", "yellow leaves"],
-  "location": { "lat": -1.2921, "lon": 36.8219, "precision_m": 2000, "village": null }
-}
-```
-
-### 6.2 Request flow
-
-```mermaid
-sequenceDiagram
-    participant In as Input (phone/Telegram workstream)
-    participant IA as Input adapter
-    participant P as Core: DataNeedsPlanner
-    participant X as Acquisition executor
-    participant St as Store (sensors)
+    participant P as Phone/Telegram system
+    participant API as data-core API
+    participant DB as Database
     participant W as Weather API
-    participant R as Report DB
-    participant C as Context assembler
-    participant Rec as Recommendation system
+    participant R as Recommender
+    participant D as Dashboard
 
-    In->>IA: structured request (format TBD)
-    IA->>P: IncomingRequest
-    P->>X: DataPlan (what, where, when, how fresh)
-    par
-        X->>St: nearby sensor readings in window
-    and
-        X->>W: current / history / forecast at location
-    and
-        X->>R: similar previous reports nearby
-    end
-    X->>C: results + metadata (age, distance, quality, gaps)
-    C->>Rec: DecisionContext
+    P->>API: POST /v1/requests (structured JSON)
+    API->>DB: store request, open case (received)
+    Note over API: geocode place name if no GPS
+    API->>API: planner.plan(request) → DataPlan
+    API->>DB: nearby sensor readings, similar previous callers
+    API->>W: weather past 72 h + forecast 48 h (DB-cached)
+    API->>DB: store DecisionContext (context_built)
+    API->>R: POST DecisionContext
+    R-->>API: disease, confidence, risk, explanation, actions
+    API->>DB: store recommendation + outbox events (recommended)
+    API->>D: webhook case.recommended (signed)
+    API->>P: webhook case.recommended (signed)
+    API->>DB: mark delivered
+    API-->>P: 201 Case incl. recommendation
 ```
 
-### 6.3 The core: deciding which data is needed
+If the recommender fails, the case ends in `failed_recommend`: the request returns `202`, and the case is resumed by `/internal/tick` or `POST /v1/cases/{id}/retry`. If a webhook fails, the event stays `pending` and the tick retries it.
 
-> ⚠️ **Open design question — not yet decided.**
-> **How exactly the core determines which data is needed for the recommendation system is currently still unknown.** The final logic depends on what the recommendation system needs, which is not specified yet. This section therefore defines only the *interface* and possible strategies; the actual decision rules will be filled in once the requirements are known.
+---
 
-What is fixed is the **contract**: the planner takes a request and returns a declarative plan. Everything else — rules, LLM, learned model, or a mix — is an interchangeable strategy behind this interface.
+## 4. Ingestion
+
+### 4.1 Sensor data (Raspberry Pi → us)
+`POST /v1/sensor-readings` (role `pi`) accepts a single reading or `{"readings": [...]}` (max 1000):
+
+```json
+{ "sensor_id": "pi-field-01", "recorded_at": "2026-10-16T14:00:00Z",
+  "lat": -1.175, "lon": 36.836, "metrics": { "humidity_pct": 87.5, "temperature_c": 22.4 } }
+```
+
+- One row per metric (`sensor_readings`). It is idempotent on `(sensor_id, recorded_at, metric)`, so duplicates are counted, not stored.
+- Unknown sensors are **auto-registered**, and the latest position is kept, so a new Pi needs no setup step. `POST /v1/sensors` optionally adds a name, kind and metadata.
+- Units are inferred from the metric suffix (`_pct`→%, `_c`→°C, `_mm`→mm, …) or given explicitly in `units`.
+- `quality`: `ok | suspect | mocked`. Mocked data is flagged in every context that uses it.
+
+### 4.2 Caller requests (phone/Telegram system → us)
+`POST /v1/requests` (role `input`). **The final layout is still open**, so the input is deliberately tolerant:
+
+| Accepted | Mapped to |
+|---|---|
+| `text` / `description` / `transcript` / `message` / `summary` | `text` (required) |
+| `lat`,`lon` / `latitude`,`longitude` / nested `location{}` | `location.lat/lon` |
+| `village` / `place` / `location: "Kiambu"` | `location.name` → geocoded if no coordinates |
+| `source` → `channel`, `reported_at` → `received_at`, `id`/`call_id` → `external_id`, … | see `input/adapters.py` |
+| anything else | kept in `extra` (stored, never rejected) |
+
+- `external_id` is an **idempotency key**: sending the same request twice returns the existing case (`200`).
+- `callback_url` (optional) overrides where the phone-system webhook goes.
+- `problem_type` and `crop` are normalised (`"Crop Health"` → `crop_health`), so similar reports match.
+
+---
+
+## 5. The core
+
+### 5.1 Deciding which data is needed — ⚠️ still open
+
+> **How exactly the core decides which data is needed for the recommendation system is currently still unknown.** It depends on which inputs the recommender team's model needs. This is not specified yet.
+
+What is fixed is the **interface** (`core/planner.py`):
 
 ```python
-class DataNeed(BaseModel):
-    source_kind: SourceKind          # SENSOR | WEATHER | REPORTS
-    metrics: list[str] | None        # e.g. ["rainfall_mm"]; None = all
-    radius_km: float | None
-    time_window: TimeWindow          # e.g. last 72 h, next 48 h (forecast)
-    max_age_s: int | None            # freshness requirement → forces live fetch if exceeded
-    filters: dict = {}               # e.g. {"problem_type": "crop_health"}
-    priority: Literal["required", "optional"]
-    reason: str                      # why this data is requested (traceability)
-
-class DataPlan(BaseModel):
-    request_id: str
-    needs: list[DataNeed]
-    strategy: str                    # which planner produced it
-    notes: list[str] = []
-
 class DataNeedsPlanner(Protocol):
-    def plan(self, request: IncomingRequest) -> DataPlan: ...
+    name: str
+    def plan(self, request: CallerRequest) -> DataPlan: ...
+
+class DataNeed(BaseModel):          # one entry of the plan
+    source: Literal["sensors", "weather", "caller_history"]
+    metrics: list[str] | None       # e.g. ["humidity_pct"]; None = all
+    radius_km: float | None
+    lookback_h: int | None
+    forecast_h: int | None
+    filters: dict                   # e.g. {"problem_type": "crop_health"}
+    priority: "required" | "optional"   # required → failure aborts; optional → recorded as a gap
+    reason: str                     # traceability: why this data was requested
 ```
 
-**Candidate strategies (none chosen yet):**
+Currently implemented is only the **`fetch_all` baseline**: weather (72 h back, 48 h ahead), sensors and caller history within 10 km / 72 h, all optional. Strategies are registered in `PLANNERS` and selected by `PLANNER_STRATEGY`, so replacing the logic doesn't affect anything else.
 
-| Strategy | Idea | Pros | Cons |
-|---|---|---|---|
-| `fetch_all` (baseline / MVP fallback) | Always fetch everything within a default radius and time window. | Trivial, robust, good for demo and for testing the pipeline end-to-end. | Noisy context, wasteful, no relevance filtering. |
-| `rule_based` | Mapping table `problem_type` → needed metrics/radius/window (e.g. *flooding* → rainfall last 72 h + forecast; *crop_health* → rainfall + temperature + similar reports within 5 km). | Transparent, explainable, matches the overview's demand for transparent rules. | Needs domain knowledge; brittle for unknown problem types. |
-| `llm_assisted` | An LLM reads the request and chooses from a **fixed catalogue** of available data needs. | Handles free-text and unforeseen cases. | Less deterministic; must be constrained to the catalogue, never invent sources. |
-| `hybrid` | Rules first, LLM only for unknown/ambiguous requests; always add a minimum baseline. | Best of both. | More moving parts. |
+Candidate strategies once the requirements are known:
 
-**Plan for now:** implement the interface + `fetch_all` so the whole pipeline works end-to-end; keep the strategy selectable via `config/planner.yaml`; replace/extend once the recommendation team defines its inputs.
+| Strategy | Idea | Trade-off |
+|---|---|---|
+| `fetch_all` *(implemented)* | Everything around the caller | Robust but unfocused |
+| `rule_based` | `problem_type`/`crop` → metrics, radius, windows (e.g. fungal risk → humidity + leaf-wetness hours; flooding → rainfall) | Transparent; needs domain knowledge |
+| `llm_assisted` | LLM picks from a **fixed catalogue** of DataNeeds | Handles free text; less deterministic |
+| `hybrid` | Rules first, LLM for unknown cases, always a minimum baseline | Best coverage; more moving parts |
 
-### 6.4 Output: the decision context
+### 5.2 Retrieval
+- **Sensors** (`core/retrieval.py`): readings within the radius and window, aggregated per sensor and metric: latest value, mean/min/max, count, distance, age and worst quality. Readings older than 6 h trigger a warning.
+- **Previous callers:** requests within the radius and window, excluding the current one. They are flagged when they share the `problem_type` and include the disease the recommender found for them. This is the input for spotting regional clusters.
+- **Weather** (`providers/weather/`): Open-Meteo hourly data summarised per window:
+  - rain sum,
+  - mean/min/max temperature,
+  - mean relative humidity,
+  - **hours with RH ≥ 90 %** (a leaf-wetness proxy relevant for fungal diseases),
+  - soil moisture.
 
-The output handed to the recommendation system. It must make **evidence, freshness and uncertainty explicit**, consistent with the overview's requirement to separate suspected risk from confirmed diagnosis.
+  Current conditions and daily values are included too. Results are cached in `weather_snapshots`.
+
+  More APIs can be added by implementing `WeatherProvider.get(lat, lon, past_h, forecast_h)` and registering them in `services.py`.
+
+### 5.3 The DecisionContext (what the recommender receives)
+Full schema: `contracts/schemas/decision_context.to_recommender.schema.json`. Real example: `contracts/examples/decision_context.json`. Abridged:
 
 ```json
 {
-  "request_id": "r-2026-10-16-0001",
-  "generated_at": "2026-10-16T14:30:04Z",
-  "request": { "problem_type": "crop_health", "text": "My crops have started dying since the heavy rains.", "location": { "lat": -1.2921, "lon": 36.8219, "precision_m": 2000 } },
-  "plan": { "strategy": "fetch_all", "needs": ["..."] },
+  "schema_version": "1.0",
+  "case_id": "…", "generated_at": "2026-10-16T19:39:30Z",
+  "request": { "text": "Spots on my bean leaves since the rain", "problem_type": "crop_health", "crop": "beans",
+               "symptoms": ["brown spots", "wilting"],
+               "location": { "lat": -1.17139, "lon": 36.83556, "name": "Kiambu", "precision_m": 5000 },
+               "location_source": "geocoded" },
+  "plan": { "strategy": "fetch_all", "needs": [ … ] },
   "evidence": {
-    "weather": {
-      "source": "open_meteo",
-      "rainfall_mm_last_72h": 84.2,
-      "forecast_rainfall_mm_next_48h": 12.0,
-      "fetched_at": "2026-10-16T14:30:02Z"
-    },
-    "sensors": [
-      { "source_id": "rain_sensor_field_01", "metric": "rainfall_mm", "value_last_72h": 91.0, "distance_km": 1.4, "age_s": 60, "quality": "MOCKED" }
-    ],
-    "similar_reports": {
-      "count": 6, "radius_km": 5, "window_h": 72,
-      "items": [ { "report_id": "...", "problem_type": "crop_health", "distance_km": 2.1, "reported_at": "2026-10-15T09:12:00Z" } ]
-    }
+    "weather": { "provider": "open_meteo", "from_cache": false,
+                 "past": { "hours": 72, "precipitation_mm": 5.8, "mean_rh_pct": 73.25, "hours_rh_ge_90": 13, … },
+                 "forecast": { … }, "current": { … }, "daily": [ … ] },
+    "sensors": [ { "sensor_id": "pi-field-01", "metric": "humidity_pct", "latest_value": 75.7,
+                   "mean": 80.731, "n_readings": 13, "distance_km": 0.404, "age_s": 1, "quality": "mocked" } ],
+    "caller_history": { "radius_km": 10, "lookback_h": 72, "total_count": 1, "same_problem_count": 1, "items": [ … ] }
   },
-  "gaps": [ "No soil-moisture sensor within 10 km" ],
-  "warnings": [ "Sensor data is mocked" ]
+  "gaps": [],
+  "warnings": [ "Location approximated from place name 'Kiambu'", "Some sensor data is mocked" ]
 }
 ```
 
----
-
-## 7. API surface (proposed)
-
-Aligned with the MVP contracts in `project_overview.md` §7; endpoints owned by this subsystem:
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /requests` | Receive a structured request; returns `request_id`. Optionally runs the pipeline synchronously. |
-| `GET /context/{request_id}` | Return the assembled `DecisionContext` (matches overview's `GET /context/{report_id}`). |
-| `GET /plan/{request_id}` | Inspect the `DataPlan` the core produced (debugging / explainability). |
-| `GET /observations?lat=&lon=&radius_km=&since=&metric=` | Query accumulated sensor/weather observations (also usable by the dashboard). |
-| `GET /sources` | List registered sources with health and data freshness. |
-| `POST /sources/{id}/poll` | Trigger an immediate poll (demo / debugging). |
+### 5.4 Recommender contract
+- We call `POST {RECOMMENDER_URL}` with the DecisionContext as the JSON body (optionally with `X-API-Key`).
+- The recommender returns `{ "disease", "confidence" (0..1), "risk_level", "explanation", "actions": [] }`. Extra fields are allowed and stored raw.
+- `RECOMMENDER_MODE=mock` uses an in-process heuristic, which is explicitly **not** a disease model. `mocks/mock_recommender.py` serves the same heuristic over HTTP as a drop-in placeholder for the real service.
 
 ---
 
-## 8. Storage
+## 6. Delivery (to the dashboard and phone system)
+- Event `case.recommended`, schema `contracts/schemas/webhook.case_recommended.schema.json`. It contains:
+  - the recommendation,
+  - short `evidence_summary` lines,
+  - `gaps` and `warnings`,
+  - the location, `external_id` and `caller_ref`.
+- Headers: `X-DataCore-Event`, `X-DataCore-Delivery` (the event id, usable for de-duplication), and `X-DataCore-Signature: sha256=<HMAC of the raw body with WEBHOOK_SECRET>`.
+- Targets:
+  - dashboard: `DASHBOARD_WEBHOOK_URL`,
+  - phone system: the request's `callback_url`, or `PHONE_WEBHOOK_URL`.
 
-Builds on the tables proposed in the overview (`sensor_readings`, `weather_observations`, `farmer_reports`). For flexibility we suggest a single generic observations table plus the report table owned by the SQL workstream:
+  Leaving a target empty disables that channel.
+- Retries: 30 s · 2ⁿ, capped at 1 h, up to 10 attempts. After that the event is marked `failed` and visible in `GET /v1/cases/{id}` → `deliveries`.
+- The phone system also gets the recommendation directly in the `POST /v1/requests` response. The webhook matters when processing finished later, after a retry.
 
-| Table | Key fields | Owner |
+---
+
+## 7. API
+
+Interactive docs: `/docs` (OpenAPI).
+
+| Endpoint | Role | Purpose |
 |---|---|---|
-| `observations` | `id`, `source_id`, `kind`, `metric`, `value`, `unit`, `observed_at`, `ingested_at`, `latitude`, `longitude`, `quality`, `raw_json` | this subsystem |
-| `source_health` | `source_id`, `last_success_at`, `last_error_at`, `last_error`, `consecutive_failures` | this subsystem |
-| `requests` / `farmer_reports` | previous caller inputs incl. location — see overview | shared with SQL workstream |
-| `decision_contexts` | `request_id`, `plan_json`, `context_json`, `created_at` | this subsystem (audit trail for the dashboard) |
-
-Spatial queries use a bounding-box prefilter + Haversine distance in Python for the MVP; PostGIS / spatial indexes only if needed.
-
----
-
-## 9. Non-functional requirements
-
-- **Modularity:** sources, input formats and planner strategies are all swappable via config.
-- **Resilience:** any single source failing degrades the context (listed under `gaps`/`warnings`) but never breaks the pipeline.
-- **Traceability:** every value in the context carries its source, timestamp, distance and quality; the plan records *why* each need was requested.
-- **Honesty about data:** mocked data is always labelled; stale data is labelled; sensors are indicators, not proof (see overview §3.D).
-- **Latency:** context should be ready within a few seconds so the caller can get an answer during the call; prefer accumulated data and only fetch live where freshness requires it.
-- **Privacy:** callers are referenced by pseudonymous id; store location at the precision needed, no more.
-- **Testability:** every source has a mock; fixtures for requests and API responses allow running the full pipeline offline.
+| `POST /v1/sensor-readings` | pi | Push readings (single or batch), idempotent |
+| `POST /v1/sensors` | pi, internal | Register/update a sensor (optional) |
+| `GET /v1/sensors` | dashboard, internal | Sensors with position and last-seen time |
+| `POST /v1/requests` | input | Submit a caller request → runs the pipeline → returns the case (201 / 202 / 200 on duplicate) |
+| `GET /v1/cases` | dashboard, input, internal | List and filter cases (status, problem_type, time, bbox), newest first |
+| `GET /v1/cases/{id}` | dashboard, input, internal | Case + request + recommendation + delivery status |
+| `GET /v1/cases/{id}/context` | dashboard, internal | Full DecisionContext (the evidence behind a recommendation) |
+| `POST /v1/cases/{id}/retry` | internal | Resume a failed case |
+| `GET /v1/observations` | dashboard, internal | Sensor readings around a point (+ optional weather) |
+| `GET/POST /internal/tick` | internal (also `Bearer`) | Cron: retry webhooks, resume failed/stuck cases, prune the weather cache |
+| `GET /health` | – | Liveness + DB check |
 
 ---
 
-## 10. Open questions / decisions pending
+## 8. Data model
+
+| Table | Content |
+|---|---|
+| `sensors` | id, name, kind, lat/lon (latest), meta, last_seen_at |
+| `sensor_readings` | sensor_id, metric, value, unit, recorded_at, received_at, lat/lon, quality, raw · unique (sensor_id, recorded_at, metric) |
+| `caller_requests` | **all previous caller inputs** incl. location (+ how it was obtained), problem_type, crop, symptoms, external_id (unique), callback_url, extra |
+| `cases` | pipeline state per request: status, attempts, last_error |
+| `decision_contexts` | stored plan + DecisionContext per case (audit trail / dashboard evidence) |
+| `recommendations` | disease, confidence, risk_level, explanation, actions, raw response |
+| `outbox` | webhook events: channel, target, payload, status, attempts, next_attempt_at |
+| `weather_snapshots` | weather cache (provider, rounded lat/lon, window, payload) |
+
+Migrations live in `alembic/versions` (`alembic upgrade head`). For quick demos the app can also create the tables itself (`CREATE_TABLES_ON_STARTUP=true`).
+
+---
+
+## 9. Deployment
+
+| Target | Setup | Notes |
+|---|---|---|
+| **Local** | `uvicorn` + SQLite, or `docker compose up` (API + Postgres + mocks + tick) | see README |
+| **Azure** *(recommended, matches the overview)* | Container Apps + PostgreSQL Flexible Server + scheduled job for the tick | [`deploy/azure.md`](deploy/azure.md) |
+| **Vercel** | `api/index.py` as a serverless function + Neon Postgres + Vercel Cron | [`deploy/vercel.md`](deploy/vercel.md) |
+
+Everything is configured through env vars (`.env.example` lists them all). Outgoing HTTPS uses the operating-system trust store (`truststore`), so it also works behind corporate or antivirus TLS proxies.
+
+---
+
+## 10. Quality and verification
+- `pytest`: 17 tests covering:
+  - auth and idempotent sensor ingestion,
+  - input aliases,
+  - the end-to-end request → delivery flow including signature checks,
+  - missing location → gap,
+  - recommender failure → retry,
+  - webhook failure → retry via tick,
+  - Open-Meteo parsing, caching and retry.
+- Live run (2026-10-16), with real Open-Meteo, the mock recommender, the webhook sink and the Pi simulator: a place-name-only request (`"Kiambu"`) was geocoded, enriched with real weather, nearby sensor data and a previous caller, then recommended and delivered. Both webhook signatures were valid. Real payloads are in `contracts/examples/`.
+- Not yet tested: Docker images, Postgres at runtime (the migration SQL is rendered and checked), and the actual Azure/Vercel deployments.
+
+---
+
+## 11. Open questions
 
 | # | Question | Depends on | Status |
 |---|---|---|---|
-| 1 | **How does the core decide which data is needed?** (strategy, rules, inputs required by the recommendation system) | Recommendation workstream | **Open — still unknown** |
-| 2 | Final layout of the incoming structured request (fields, versions, channels) | Phone/Telegram + extraction workstream | Open |
-| 3 | How the Raspberry Pi delivers sensor data (HTTP pull, MQTT push, file sync) | Hardware | Open — mocked meanwhile |
-| 4 | Which sensors beyond rain are available | Hardware | Open |
-| 5 | Exact schema / ownership of the report DB | SQL workstream | Open |
-| 6 | Default radii and time windows (e.g. 5 km / 72 h) | Domain input | Provisional values in config |
-| 7 | Should the pipeline run synchronously on `POST /requests` or asynchronously with a callback? | Integration workstream | Open |
-
----
-
-## 11. Implementation roadmap
-
-| Phase | Deliverable |
-|---|---|
-| **1. Skeleton** | Repo layout, pydantic models, FastAPI app, config loading, fixtures. |
-| **2. Sources** | `DataSource` protocol, registry, mocked rain sensor, Open-Meteo adapter, report-DB adapter (against SQLite fixture). |
-| **3. Accumulator** | Scheduler with per-source intervals, backoff, upserts, health tracking, `/sources` endpoint. |
-| **4. Input** | `InputAdapter` protocol + tolerant v0 adapter, `POST /requests`. |
-| **5. Core (MVP)** | `DataNeedsPlanner` interface + `fetch_all` strategy, executor, context assembler, `GET /context/{id}`. |
-| **6. Integration** | Agree payloads with recommendation + input teams, end-to-end run of the overview's demo scenario. |
-| **7. Core (real)** | Replace/extend `fetch_all` with the chosen strategy once §6.3 is decided. |
-| **8. Hardware** | Swap mocked rain sensor for the Raspberry-Pi implementation. |
+| 1 | **How does the core decide which data is needed?** (strategy, inputs the model requires) | Recommender team | **Open — still unknown.** `fetch_all` baseline in place |
+| 2 | Final layout of the structured caller request | Phone/Telegram team | Open. The tolerant adapter covers the overview's example |
+| 3 | Recommender API: sync HTTP OK? latency? auth? | Recommender team | Contract proposed (§5.4) |
+| 4 | Dashboard: webhook push, polling, or both? | Dashboard team | Both offered |
+| 5 | Which sensors/metrics beyond humidity and temperature, and how often does the Pi post? | Hardware | Open; any snake_case metric is accepted |
+| 6 | Default radius / time windows (10 km / 72 h / 48 h) | Domain input | Provisional, configurable |
+| 7 | Azure SQL vs PostgreSQL | Team / Azure setup | Postgres chosen for portability |
+| 8 | Data protection: retention of caller data, location precision | Team | `caller_ref` is pseudonymous; retention not implemented |
 
 ---
 
@@ -458,9 +365,9 @@ Spatial queries use a bounding-box prefilter + Haversine distance in Python for 
 
 | Term | Meaning |
 |---|---|
-| **Accumulator** | Background component that periodically polls sources and stores their data. |
-| **Source adapter** | Plug-in that fetches data from one source and normalises it to `Observation`s. |
-| **Incoming request** | The structured (natural-language-containing) input derived from a phone call, Telegram message, etc. |
-| **Data plan** | The core's declarative statement of what data a given request needs. |
-| **Decision context** | The assembled evidence package handed to the recommendation system. |
-| **Gap** | Data that was wanted but not available (no sensor nearby, API down, no location). |
+| **Case** | One caller request travelling through the pipeline (`received → … → delivered`). |
+| **Data plan** | The core's declarative list of which data a request needs (`DataNeed`s) and why. |
+| **DecisionContext** | The evidence package sent to the recommender: request, plan, weather, sensors, similar reports, gaps, warnings. |
+| **Gap** | Data that was wanted but unavailable (no location, no sensor nearby, API down). |
+| **Outbox** | Table of webhooks waiting to be delivered; guarantees eventual delivery. |
+| **Tick** | Periodic maintenance call (`/internal/tick`) triggered by an external scheduler. |

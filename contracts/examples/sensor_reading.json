@@ -1,0 +1,10 @@
+{
+  "sensor_id": "pi-field-01",
+  "recorded_at": "2026-10-16T14:00:00Z",
+  "lat": -1.175,
+  "lon": 36.836,
+  "metrics": {
+    "humidity_pct": 87.5,
+    "temperature_c": 22.4
+  }
+}

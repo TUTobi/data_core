@@ -1,5 +1,9 @@
 # Farmer Advisory & Early-Warning System
 
+This is a md-brief for the full overview of the target-project, the data_core project is only a sub-part of this whole system.
+This describes the periphery.
+For the implementation of this exact repo, also look at project.md.
+
 ## 1. Concept
 
 A farmer calls a hotline and describes an agricultural problem in natural language. The system transcribes the conversation, extracts structured information, and stores it in a SQL database. It then enriches the report with current weather, sensor measurements, and **previous reports from nearby farmers**. A recommendation engine assesses the evidence and proposes an appropriate countermeasure. The farmer receives an understandable voice response, while agricultural officers can view geographically located incidents, trends, and the data behind decisions on a dashboard.

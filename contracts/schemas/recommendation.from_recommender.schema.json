@@ -1,0 +1,72 @@
+{
+  "additionalProperties": true,
+  "description": "Response expected from the external recommender. Extra fields are allowed and stored raw.",
+  "examples": [
+    {
+      "actions": [
+        "Remove infected leaves",
+        "Contact the extension officer"
+      ],
+      "confidence": 0.72,
+      "disease": "late_blight",
+      "explanation": "Prolonged leaf wetness and several similar reports nearby.",
+      "risk_level": "high"
+    }
+  ],
+  "properties": {
+    "disease": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Predicted disease/problem; null if none identified",
+      "title": "Disease"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "risk_level": {
+      "default": "unknown",
+      "description": "low | medium | high | unknown",
+      "title": "Risk Level",
+      "type": "string"
+    },
+    "explanation": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Explanation"
+    },
+    "actions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Actions",
+      "type": "array"
+    }
+  },
+  "title": "RecommendationResult",
+  "type": "object"
+}
