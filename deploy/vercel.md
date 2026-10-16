@@ -1,6 +1,6 @@
 # Deploying to Vercel (Hobby plan + Neon Postgres)
 
-The whole FastAPI app runs as **one Python serverless function** (`api/index.py`). `vercel.json` routes every path to it, sets `maxDuration: 60`, keeps tests/mocks/docs out of the bundle, and schedules a **daily** cron for `/internal/tick`.
+The whole FastAPI app runs as **one Python serverless function** (`api/index.py`). Vercel detects it as a Python backend and routes every path to it by itself. Do **not** add a `rewrites` rule: Vercel would then pass the rewritten path (`/api/index`) to the app and every route would return `{"detail":"Not Found"}`. `vercel.json` only sets `maxDuration: 60`, keeps tests/mocks/docs out of the bundle, and schedules a **daily** cron for `/internal/tick`.
 
 ## What runs where
 

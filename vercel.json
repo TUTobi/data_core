@@ -5,6 +5,5 @@
       "excludeFiles": "{tests/**,mocks/**,contracts/**,deploy/**,alembic/**,scripts/**,.venv/**}"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
   "crons": [{ "path": "/internal/tick", "schedule": "0 6 * * *" }]
 }
