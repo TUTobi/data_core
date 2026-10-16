@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, HTTPException, Response
 from sqlalchemy.exc import IntegrityError
 
 from data_core.api.deps import AppServices, AppSettings, DbSession, require_role
 from data_core.core.pipeline import process_case
 from data_core.db.models import Case, CaseStatus
-from data_core.ingestion.request_service import create_request, find_by_external_id, load_case
+from data_core.ingestion.request_service import create_request, find_by_external_id, is_mock_request, load_case
 from data_core.schemas.cases import CaseOut
 from data_core.schemas.requests import CallerRequestIn
 
@@ -26,7 +26,12 @@ def submit_request(
 ) -> Case:
     """Receive a structured caller input and run the pipeline synchronously:
     store -> plan data needs -> gather DB/weather data -> recommender -> deliver (webhooks).
-    The response already contains the recommendation when processing succeeded."""
+    The response already contains the recommendation when processing succeeded.
+    Demo calls (channel "demo" / extra.demo) are refused when config.yaml sets caller_requests.mocked=false."""
+    if not services.runtime.caller_requests.mocked and is_mock_request(data):
+        raise HTTPException(
+            status_code=422, detail="Demo/mock caller requests are disabled (config.yaml: caller_requests.mocked=false)"
+        )
     if data.external_id and (existing := find_by_external_id(db, data.external_id)):
         response.status_code = 200
         return load_case(db, existing.case.id)

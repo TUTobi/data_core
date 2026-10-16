@@ -1,0 +1,37 @@
+[   25340ms] [ERROR] Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <ul> p 
+    at ul
+    at p
+    at div
+    at http://localhost:5174/node_modules/.vite/deps/@tremor_react.js?v=eef60887:49682:17
+    at ContextDetails (http://localhost:5174/src/pages/CallDetail.tsx:569:27)
+    at div
+    at CallDetail (http://localhost:5174/src/pages/CallDetail.tsx:12:30)
+    at main
+    at div
+    at Layout (http://localhost:5174/src/components/Layout.tsx:17:26)
+    at App (http://localhost:5174/src/App.tsx:11:16) @ http://localhost:5174/@vite/client:356
+[  186616ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:5174/src/assets/vite.svg?import:0
+[  186617ms] [ERROR] [vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  186620ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ http://localhost:5174/src/App.css:0
+[  186620ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/assets/hero.png?import:0
+[  186621ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/assets/react.svg?import:0
+[  186622ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5174/src/index.css?t=1792187287956:0
+[  186623ms] [ERROR] [vite] Failed to reload /src/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  186634ms] [ERROR] Failed to load resource: net::ERR_EMPTY_RESPONSE @ http://localhost:5174/node_modules/leaflet/dist/leaflet.css?t=1792187287980:0
+[  186634ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ http://localhost:5174/src/index.css?t=1792187287980:0
+[  186635ms] [ERROR] [vite] Failed to reload /node_modules/leaflet/dist/leaflet.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  186635ms] [ERROR] [vite] Failed to reload /src/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  186636ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:1082
+[  187241ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom-du-XaUz4.js?v=2fd3230b:17221
+[  239167ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/src/App.css?t=1792187340965:0
+[  239168ms] [ERROR] [vite] Failed to reload /src/App.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  239196ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/App.tsx?t=1792187340967:0
+[  239196ms] [ERROR] [vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  239222ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/App.tsx?t=1792187340968:0
+[  239222ms] [ERROR] [vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  239244ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/App.tsx?t=1792187340969:0
+[  239244ms] [ERROR] [vite] Failed to reload /src/App.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5174/@vite/client:356
+[  248825ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:1082
+[  248831ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5174/src/main.tsx?t=1792187347937:0
+[  248842ms] [ERROR] Failed to load resource: net::ERR_EMPTY_RESPONSE @ http://localhost:5174/favicon.svg:0
+[  250635ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom-du-XaUz4.js?v=2fd3230b:17221

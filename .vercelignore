@@ -1,0 +1,19 @@
+# Files not uploaded by `vercel deploy` (CLI deployments). The function only needs
+# api/, src/, pyproject.toml, requirements.txt and vercel.json.
+.venv
+.git
+.idea
+.pytest_cache
+**/__pycache__
+*.db
+.env
+.env.*
+tests
+mocks
+contracts
+deploy
+scripts
+alembic
+alembic.ini
+docker-compose.yml
+Dockerfile

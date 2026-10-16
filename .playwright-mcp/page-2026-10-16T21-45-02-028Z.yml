@@ -1,0 +1,24 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: Farmer Support Intelligence
+      - navigation [ref=e7]:
+        - link "Overview" [ref=e8] [cursor=pointer]:
+          - /url: "#/"
+        - link "Call history" [ref=e9] [cursor=pointer]:
+          - /url: "#/calls"
+      - generic [ref=e10]: Backend connected · v0.1.0
+  - main [ref=e13]:
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - paragraph [ref=e69]: Call history
+          - paragraph
+        - generic [ref=e70]:
+          - generic [ref=e72]:
+            - combobox "select-hidden" [ref=e73]
+            - button "All problems" [ref=e75] [cursor=pointer]
+          - generic [ref=e81]:
+            - combobox "select-hidden" [ref=e82]
+            - button "All statuses" [ref=e84] [cursor=pointer]
+      - paragraph [ref=e90]: Loading…

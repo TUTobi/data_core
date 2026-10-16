@@ -16,8 +16,10 @@ router = APIRouter(prefix="/v1", tags=["cases"])
 @router.get("/cases", response_model=CaseList, dependencies=[require_role("dashboard", "input", "internal")])
 def list_cases(
     db: DbSession,
+    services: AppServices,
     status: str | None = None,
     problem_type: str | None = None,
+    caller_ref: str | None = None,
     since: UtcDatetime | None = None,
     until: UtcDatetime | None = None,
     min_lat: float | None = None,
@@ -27,12 +29,16 @@ def list_cases(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ) -> CaseList:
-    """Cases for the dashboard (map, filters). Newest first."""
+    """Cases for the dashboard (map, filters). Newest call (received_at) first."""
     stmt = select(Case).join(Case.request)
+    if not services.runtime.caller_requests.mocked:
+        stmt = stmt.where(CallerRequest.is_mock.is_(False))
     if status:
         stmt = stmt.where(Case.status == status)
     if problem_type:
         stmt = stmt.where(CallerRequest.problem_type == problem_type)
+    if caller_ref:
+        stmt = stmt.where(CallerRequest.caller_ref == caller_ref)
     if since:
         stmt = stmt.where(CallerRequest.received_at >= since)
     if until:
@@ -49,7 +55,7 @@ def list_cases(
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))
     items = db.scalars(
         stmt.options(selectinload(Case.request), selectinload(Case.recommendation), selectinload(Case.outbox_events))
-        .order_by(Case.created_at.desc())
+        .order_by(CallerRequest.received_at.desc(), Case.id)
         .limit(limit)
         .offset(offset)
     ).all()

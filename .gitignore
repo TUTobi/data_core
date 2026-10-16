@@ -8,3 +8,6 @@ __pycache__/
 !.env.example
 *.db
 .vercel
+
+.vercel
+.env*

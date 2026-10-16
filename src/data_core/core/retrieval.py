@@ -24,8 +24,10 @@ def nearby_sensor_evidence(
     lookback_h: int,
     now: datetime,
     metrics: list[str] | None = None,
+    include_mocked: bool = True,
 ) -> list[SensorEvidence]:
-    """Aggregate readings per (sensor, metric) within radius and time window, nearest first."""
+    """Aggregate readings per (sensor, metric) within radius and time window, nearest first.
+    `include_mocked=False` drops readings flagged quality "mocked" (config.yaml sensors.mocked=false)."""
     min_lat, max_lat, min_lon, max_lon = bounding_box(lat, lon, radius_km)
     stmt = select(SensorReading).where(
         SensorReading.lat.between(min_lat, max_lat),
@@ -35,6 +37,8 @@ def nearby_sensor_evidence(
     )
     if metrics:
         stmt = stmt.where(SensorReading.metric.in_(metrics))
+    if not include_mocked:
+        stmt = stmt.where(SensorReading.quality != "mocked")
 
     groups: dict[tuple[str, str], list[tuple[SensorReading, float]]] = defaultdict(list)
     for reading in session.scalars(stmt):
@@ -78,8 +82,10 @@ def similar_reports(
     now: datetime,
     filters: dict[str, Any] | None = None,
     limit: int = 50,
+    include_mock: bool = True,
 ) -> CallerHistoryEvidence:
-    """Previous caller reports near the location, flagged when they share the problem type."""
+    """Previous caller reports near the location, flagged when they share the problem type.
+    `include_mock=False` drops demo calls (config.yaml caller_requests.mocked=false)."""
     min_lat, max_lat, min_lon, max_lon = bounding_box(lat, lon, radius_km)
     stmt = (
         select(CallerRequest)
@@ -94,6 +100,8 @@ def similar_reports(
     )
     if filters and filters.get("problem_type"):
         stmt = stmt.where(CallerRequest.problem_type == filters["problem_type"])
+    if not include_mock:
+        stmt = stmt.where(CallerRequest.is_mock.is_(False))
 
     items = []
     for other in session.scalars(stmt):
@@ -111,6 +119,7 @@ def similar_reports(
                 distance_km=round(distance, 3),
                 same_problem_type=bool(request.problem_type) and other.problem_type == request.problem_type,
                 disease=recommendation.disease if recommendation else None,
+                is_mock=other.is_mock,
             )
         )
     items.sort(key=lambda r: r.received_at, reverse=True)

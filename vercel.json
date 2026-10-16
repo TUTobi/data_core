@@ -2,6 +2,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
+      "includeFiles": "config.yaml",
       "excludeFiles": "{tests/**,mocks/**,contracts/**,deploy/**,alembic/**,scripts/**,.venv/**}"
     }
   },

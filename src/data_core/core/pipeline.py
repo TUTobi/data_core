@@ -46,7 +46,7 @@ def process_case(session: Session, case: Case, services: Services, settings: Set
         try:
             context = DecisionContext.model_validate(case.decision_context.context)
             result = services.recommender.recommend(context)
-            _store_recommendation(case, context, result, settings)
+            _store_recommendation(case, context, result, settings, delivery_mocked=services.runtime.delivery.mocked)
             case.status = CaseStatus.RECOMMENDED
             case.last_error = None
             session.commit()
@@ -104,7 +104,7 @@ def _store_context(case: Case, context: DecisionContext) -> None:
 
 
 def _store_recommendation(
-    case: Case, context: DecisionContext, result: RecommendationResult, settings: Settings
+    case: Case, context: DecisionContext, result: RecommendationResult, settings: Settings, delivery_mocked: bool
 ) -> None:
     case.recommendation = Recommendation(
         disease=result.disease,
@@ -128,7 +128,7 @@ def _store_recommendation(
         warnings=context.warnings,
         created_at=utcnow(),
     )
-    enqueue_events(case, payload.model_dump(mode="json"), settings)
+    enqueue_events(case, payload.model_dump(mode="json"), settings, mocked=delivery_mocked)
 
 
 def evidence_summary(context: DecisionContext) -> list[str]:

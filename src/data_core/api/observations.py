@@ -43,6 +43,8 @@ def get_observations(
     )
     if metric:
         stmt = stmt.where(SensorReading.metric == metric)
+    if not services.runtime.sensors.mocked:
+        stmt = stmt.where(SensorReading.quality != "mocked")
 
     readings = []
     for r in db.scalars(stmt.order_by(SensorReading.recorded_at.desc())):

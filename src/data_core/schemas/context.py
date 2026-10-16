@@ -89,6 +89,7 @@ class SimilarReport(BaseModel):
     distance_km: float
     same_problem_type: bool
     disease: str | None = None
+    is_mock: bool = Field(False, description="Demo/mock call (channel 'demo' / extra.demo)")
 
 
 class CallerHistoryEvidence(BaseModel):

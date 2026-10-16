@@ -1,5 +1,6 @@
 import pytest
 import respx
+import yaml
 from fastapi.testclient import TestClient
 
 from data_core.config import Settings
@@ -10,23 +11,41 @@ DASHBOARD_HOOK = "http://dashboard.test/hooks/case"
 PHONE_HOOK = "http://phone.test/hooks/case"
 WEBHOOK_SECRET = "s3cret"
 
+# Test default: everything offline/mocked, except delivery, which goes to the respx-mocked webhook URLs
+# so the real outbox path stays covered.
+TEST_MOCKS = {
+    "weather": True,
+    "geocoding": True,
+    "sensors": True,
+    "caller_requests": True,
+    "recommender": True,
+    "delivery": False,
+}
+
 
 def auth(role: str) -> dict[str, str]:
     return {"X-API-Key": KEYS[role]}
+
+
+def write_config(path, **flags) -> str:
+    """Write a config.yaml with TEST_MOCKS overridden by `flags` (component=bool)."""
+    mocks = {**TEST_MOCKS, **flags}
+    data = {name: {"mocked": mocked} for name, mocked in mocks.items()}
+    data["planner"] = {"strategy": "fetch_all"}
+    path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    return str(path)
 
 
 @pytest.fixture
 def settings(tmp_path) -> Settings:
     return Settings(
         _env_file=None,
+        config_file=write_config(tmp_path / "config.yaml"),
         database_url=f"sqlite:///{(tmp_path / 'test.db').as_posix()}",
         pi_keys=KEYS["pi"],
         input_keys=KEYS["input"],
         dashboard_keys=KEYS["dashboard"],
         internal_keys=KEYS["internal"],
-        weather_provider="mock",
-        geocoding_enabled=False,
-        recommender_mode="mock",
         dashboard_webhook_url=DASHBOARD_HOOK,
         phone_webhook_url=PHONE_HOOK,
         webhook_secret=WEBHOOK_SECRET,
@@ -34,10 +53,14 @@ def settings(tmp_path) -> Settings:
 
 
 @pytest.fixture
-def make_client(settings):
+def make_client(settings, tmp_path):
+    """make_client(mocks={"sensors": False}, recommender_url=...): `mocks` overrides config.yaml flags,
+    other keyword arguments override Settings. Clients share the same database."""
     clients = []
 
-    def _make(**overrides) -> TestClient:
+    def _make(mocks: dict[str, bool] | None = None, **overrides) -> TestClient:
+        if mocks:
+            overrides["config_file"] = write_config(tmp_path / f"config_{len(clients)}.yaml", **mocks)
         app = create_app(settings.model_copy(update=overrides))
         client = TestClient(app)
         client.__enter__()

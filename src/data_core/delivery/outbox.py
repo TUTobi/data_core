@@ -25,13 +25,20 @@ def sign(secret: str, body: bytes) -> str:
     return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 
 
-def enqueue_events(case: Case, payload: dict, settings: Settings) -> list[OutboxEvent]:
-    targets = []
-    if settings.dashboard_webhook_url:
-        targets.append(("dashboard", settings.dashboard_webhook_url))
-    phone_url = case.request.callback_url or settings.phone_webhook_url
-    if phone_url:
-        targets.append(("phone", phone_url))
+MOCK_SCHEME = "mock://"
+
+
+def enqueue_events(case: Case, payload: dict, settings: Settings, mocked: bool) -> list[OutboxEvent]:
+    """`mocked` (config.yaml delivery.mocked): both channels go to mock:// targets that are only logged."""
+    if mocked:
+        targets = [("dashboard", f"{MOCK_SCHEME}dashboard"), ("phone", f"{MOCK_SCHEME}phone")]
+    else:
+        targets = []
+        if settings.dashboard_webhook_url:
+            targets.append(("dashboard", settings.dashboard_webhook_url))
+        phone_url = case.request.callback_url or settings.phone_webhook_url
+        if phone_url:
+            targets.append(("phone", phone_url))
 
     events = [
         OutboxEvent(channel=channel, target_url=url, event=payload["event"], payload=payload)
@@ -47,6 +54,14 @@ def _backoff_s(attempts: int) -> int:
 
 def send_event(http: httpx.Client, event: OutboxEvent, settings: Settings) -> bool:
     now = utcnow()
+    if event.target_url.startswith(MOCK_SCHEME):
+        log.info("mock delivery %s -> %s: %s", event.event, event.target_url, event.payload.get("case_id"))
+        event.attempts += 1
+        event.status = OutboxStatus.SENT
+        event.sent_at = now
+        event.last_error = None
+        return True
+
     body = json.dumps(event.payload, separators=(",", ":"), ensure_ascii=False).encode()
     headers = {
         "Content-Type": "application/json",

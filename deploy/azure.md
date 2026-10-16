@@ -35,8 +35,8 @@ az containerapp update -g $RG -n data-core --set-env-vars \
   PI_KEYS=secretref:pi-keys INPUT_KEYS=secretref:input-keys \
   DASHBOARD_KEYS=secretref:dashboard-keys INTERNAL_KEYS=secretref:internal-keys \
   WEBHOOK_SECRET=secretref:webhook-secret \
-  WEATHER_PROVIDER=open_meteo GEOCODING_COUNTRY_CODE=KE \
-  RECOMMENDER_MODE=http RECOMMENDER_URL=https://<recommender-host>/predict \
+  GEOCODING_COUNTRY_CODE=KE \
+  RECOMMENDER_URL=https://<recommender-host>/predict \
   DASHBOARD_WEBHOOK_URL=https://<dashboard-host>/hooks/case \
   PHONE_WEBHOOK_URL=https://<phone-host>/hooks/case
 ```

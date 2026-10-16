@@ -32,8 +32,7 @@ services:
       INPUT_KEYS: dev-input-key
       DASHBOARD_KEYS: dev-dashboard-key
       INTERNAL_KEYS: dev-internal-key
-      WEATHER_PROVIDER: open_meteo
-      RECOMMENDER_MODE: http
+      DATA_CORE_CONFIG: config.docker.yaml   # mock switchboard: real HTTP paths against the mock services
       RECOMMENDER_URL: http://recommender:8001/predict
       DASHBOARD_WEBHOOK_URL: http://webhook-sink:8002/hooks/dashboard
       PHONE_WEBHOOK_URL: http://webhook-sink:8002/hooks/phone

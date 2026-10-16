@@ -1,0 +1,9 @@
+# docker compose variant of config.yaml (selected via DATA_CORE_CONFIG): exercises the real HTTP paths
+# against the mock services in docker-compose.yml (mock recommender, webhook sink).
+weather:         { mocked: false }
+geocoding:       { mocked: false }
+sensors:         { mocked: true }
+caller_requests: { mocked: true }
+recommender:     { mocked: false }   # -> RECOMMENDER_URL=http://recommender:8001/predict (mock service)
+delivery:        { mocked: false }   # -> webhook-sink service
+planner:         { strategy: fetch_all }

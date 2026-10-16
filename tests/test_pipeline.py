@@ -87,7 +87,7 @@ def test_request_without_location_reports_gap(client, webhooks):
 
 
 def test_recommender_failure_then_retry(make_client, webhooks):
-    client = make_client(recommender_mode="http", recommender_url="http://recommender.test/predict")
+    client = make_client(mocks={"recommender": False}, recommender_url="http://recommender.test/predict")
     route = webhooks.post("http://recommender.test/predict", name="recommender")
     route.respond(503)
 

@@ -10,7 +10,7 @@ COPY pyproject.toml ./
 COPY src ./src
 RUN pip install .
 
-COPY alembic.ini ./
+COPY alembic.ini config.yaml config.docker.yaml ./
 COPY alembic ./alembic
 COPY mocks ./mocks
 

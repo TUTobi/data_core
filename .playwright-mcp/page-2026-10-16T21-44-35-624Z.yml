@@ -1,0 +1,57 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: Farmer Support Intelligence
+      - navigation [ref=e7]:
+        - link "Overview" [ref=e8] [cursor=pointer]:
+          - /url: "#/"
+        - link "Call history" [ref=e9] [cursor=pointer]:
+          - /url: "#/calls"
+      - generic [ref=e10]: Checking backend…
+  - main [ref=e13]:
+    - generic [ref=e14]:
+      - paragraph [ref=e16]: Overview · last 30 days
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: Incoming calls
+          - paragraph [ref=e20]: …
+        - generic [ref=e21]:
+          - paragraph [ref=e22]: Distinct callers
+          - paragraph [ref=e23]: …
+        - generic [ref=e24]:
+          - paragraph [ref=e25]: Repeat callers
+          - paragraph [ref=e26]: …
+      - generic [ref=e27]:
+        - paragraph [ref=e28]: Caller locations
+        - paragraph [ref=e29]: Locations stored with each call (historical, not a live feed). Click a pin to open the call.
+        - generic [ref=e30]:
+          - generic:
+            - generic [ref=e31]:
+              - button "Zoom in" [ref=e32] [cursor=pointer]: +
+              - button "Zoom out" [ref=e33] [cursor=pointer]: −
+            - generic [ref=e34]:
+              - link "Leaflet" [ref=e35] [cursor=pointer]:
+                - /url: https://leafletjs.com
+              - text: "| ©"
+              - link "OpenStreetMap" [ref=e40] [cursor=pointer]:
+                - /url: https://www.openstreetmap.org/copyright
+              - text: contributors
+        - generic [ref=e41]:
+          - generic [ref=e42]: Call < 30 min ago
+          - generic [ref=e44]: Earlier call
+          - generic [ref=e46]: Sensor seen < 24 h
+          - generic [ref=e48]: Sensor stale
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - paragraph [ref=e52]: Reported problems
+          - paragraph [ref=e53]: Farmer-reported categories, not confirmed diagnoses.
+          - paragraph [ref=e54]: Loading…
+        - generic [ref=e55]:
+          - paragraph [ref=e56]: Sensor coverage
+          - paragraph [ref=e57]: Registered field sensors; "working" = reported within 24 h.
+          - paragraph [ref=e58]: Loading…
+      - generic [ref=e59]:
+        - generic [ref=e61]:
+          - paragraph [ref=e62]: Weather
+          - paragraph [ref=e63]: Backend weather data for a call location.
+        - paragraph [ref=e65]: No call locations yet, so there's nowhere to show weather for.

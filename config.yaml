@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------------------------
+# What is mocked? Single source of truth for mock vs. real (loaded at startup, no env overrides).
+# Secrets, URLs and API keys stay in env vars. Changing a flag = edit this file + redeploy.
+#
+# mocked: true   -> the stand-in is used / mock data is accepted (and labelled as mock everywhere)
+# mocked: false  -> strictly real: real implementation, mock data is rejected (422) and ignored,
+#                   missing real configuration fails at startup or leaves the channel off
+# Current flags are also reported by GET /health under "mocks".
+# ---------------------------------------------------------------------------------------------
+
+weather:
+  mocked: true     # false: Open-Meteo (an outage becomes a "gap" in the context) | true: synthetic humid weather
+
+geocoding:
+  mocked: false     # false: Open-Meteo place search for village names | true: small built-in demo gazetteer
+
+sensors:
+  mocked: false      # true: readings with quality "mocked" (mocks/pi_simulator.py) are accepted and used
+                    # false: such readings are rejected (422) and existing ones are ignored everywhere
+
+caller_requests:
+  mocked: false      # true: demo calls (channel "demo" or extra.demo=true, mocks/seed_demo.py) are accepted and used
+                    # false: rejected (422) and hidden from evidence, /v1/cases and /v1/stats/summary
+
+recommender:
+  mocked: false     # true: built-in heuristic (NOT a disease model)
+                    # false: external service at RECOMMENDER_URL - startup fails if it is not set
+                    #        (a URL ending in /analyze = the potato engine, recommendation-engine-2)
+
+delivery:
+  mocked: true      # true: webhooks are only logged and marked "sent" (target mock://...)
+                    # false: real signed POSTs to DASHBOARD_WEBHOOK_URL / PHONE_WEBHOOK_URL (unset URL = channel off)
+
+planner:
+  strategy: fetch_all   # not a mock: placeholder until the data-selection logic is defined (project.md 5.1)

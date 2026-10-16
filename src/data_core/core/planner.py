@@ -3,7 +3,7 @@
 NOTE: How the core should make this decision is still undecided (see project.md, section on the
 core). It depends on what the recommendation system needs. Only the interface is fixed:
     plan(request) -> DataPlan
-Strategies are interchangeable and selected via PLANNER_STRATEGY. For now there is only the
+Strategies are interchangeable and selected via `planner.strategy` in config.yaml. For now there is only the
 `fetch_all` baseline; rule-based / LLM-assisted / hybrid strategies can be added to PLANNERS.
 """
 
@@ -63,10 +63,10 @@ PLANNERS: dict[str, Callable[[Settings], DataNeedsPlanner]] = {
 }
 
 
-def build_planner(settings: Settings) -> DataNeedsPlanner:
+def build_planner(strategy: str, settings: Settings) -> DataNeedsPlanner:
     try:
-        return PLANNERS[settings.planner_strategy](settings)
+        return PLANNERS[strategy](settings)
     except KeyError:
         raise ValueError(
-            f"Unknown PLANNER_STRATEGY {settings.planner_strategy!r}; available: {sorted(PLANNERS)}"
+            f"Unknown planner.strategy {strategy!r} in config.yaml; available: {sorted(PLANNERS)}"
         ) from None

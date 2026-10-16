@@ -1,14 +1,23 @@
-"""Runtime configuration (12-factor: everything comes from env vars / .env)."""
+"""Runtime configuration from env vars / .env: secrets, URLs, keys and tuning.
+
+What is mocked vs. real is NOT configured here but in config.yaml (see runtime_config.py).
+"""
 
 import os
 from functools import lru_cache
-from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Former mock switches, now in config.yaml. Still set somewhere (e.g. on Vercel) -> startup warning.
+LEGACY_MOCK_ENV_VARS = ("WEATHER_PROVIDER", "RECOMMENDER_MODE", "GEOCODING_ENABLED", "PLANNER_STRATEGY")
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # --- mock switchboard ----------------------------------------------------
+    config_file: str = Field("config.yaml", validation_alias=AliasChoices("DATA_CORE_CONFIG", "config_file"))
 
     # --- persistence -------------------------------------------------------
     database_url: str = "sqlite:///./data_core.db"
@@ -24,27 +33,26 @@ class Settings(BaseSettings):
     dashboard_keys: str = ""
     internal_keys: str = ""
 
-    # --- weather -------------------------------------------------------------
-    weather_provider: Literal["open_meteo", "mock"] = "open_meteo"
+    # --- CORS (comma-separated browser origins allowed to call the API, e.g. the dashboard) ---
+    cors_origins: str = "http://localhost:5173"
+
+    # --- weather / geocoding (mock or real: config.yaml) ------------------------
     weather_cache_ttl_s: int = 900
     weather_timeout_s: float = 8.0
-    geocoding_enabled: bool = True
     geocoding_country_code: str = ""  # ISO-3166 alpha-2, narrows place-name lookups (e.g. "KE")
 
-    # --- core / planner ------------------------------------------------------
-    planner_strategy: str = "fetch_all"
+    # --- core / planner (strategy: config.yaml) ------------------------------
     default_radius_km: float = 10.0
     default_lookback_h: int = 72
     default_forecast_h: int = 48
     max_case_attempts: int = 5
 
-    # --- recommender (external system) --------------------------------------
-    recommender_mode: Literal["mock", "http"] = "mock"
+    # --- recommender (external system; mock or real: config.yaml) -----------
     recommender_url: str = ""  # full endpoint, e.g. http://recommender:8001/predict
     recommender_api_key: str = ""
     recommender_timeout_s: float = 20.0
 
-    # --- delivery (webhooks to dashboard / phone system) ---------------------
+    # --- delivery (webhooks to dashboard / phone system; mock or real: config.yaml) ---
     dashboard_webhook_url: str = ""
     phone_webhook_url: str = ""  # fallback when a request has no callback_url
     webhook_secret: str = ""  # HMAC-SHA256 signing secret for outgoing webhooks
@@ -54,6 +62,9 @@ class Settings(BaseSettings):
     def keys_for(self, role: str) -> set[str]:
         raw = getattr(self, f"{role}_keys", "")
         return {k.strip() for k in raw.split(",") if k.strip()}
+
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 def running_on_vercel() -> bool:

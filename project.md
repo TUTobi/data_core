@@ -209,7 +209,7 @@ class DataNeed(BaseModel):          # one entry of the plan
     reason: str                     # traceability: why this data was requested
 ```
 
-Currently implemented is only the **`fetch_all` baseline**: weather (72 h back, 48 h ahead), sensors and caller history within 10 km / 72 h, all optional. Strategies are registered in `PLANNERS` and selected by `PLANNER_STRATEGY`, so replacing the logic doesn't affect anything else.
+Currently implemented is only the **`fetch_all` baseline**: weather (72 h back, 48 h ahead), sensors and caller history within 10 km / 72 h, all optional. Strategies are registered in `PLANNERS` and selected by `planner.strategy` in `config.yaml`, so replacing the logic doesn't affect anything else.
 
 Candidate strategies once the requirements are known:
 
@@ -262,7 +262,7 @@ Full schema: `contracts/schemas/decision_context.to_recommender.schema.json`. Re
 ### 5.4 Recommender contract
 - We call `POST {RECOMMENDER_URL}` with the DecisionContext as the JSON body (optionally with `X-API-Key`).
 - The recommender returns `{ "disease", "confidence" (0..1), "risk_level", "explanation", "actions": [] }`. Extra fields are allowed and stored raw.
-- `RECOMMENDER_MODE=mock` uses an in-process heuristic, which is explicitly **not** a disease model. `mocks/mock_recommender.py` serves the same heuristic over HTTP as a drop-in placeholder for the real service.
+- `recommender.mocked: true` in `config.yaml` uses an in-process heuristic, which is explicitly **not** a disease model. `mocks/mock_recommender.py` serves the same heuristic over HTTP as a drop-in placeholder for the real service.
 
 ---
 
@@ -328,7 +328,7 @@ Migrations live in `alembic/versions` (`alembic upgrade head`). For quick demos 
 | **Vercel** *(chosen for hosting)* | Hobby plan: `api/index.py` as a serverless function + **Neon** Postgres + **daily** Vercel Cron for the tick | [`deploy/vercel.md`](deploy/vercel.md) |
 | **Azure** *(alternative)* | Container Apps + PostgreSQL Flexible Server + scheduled job for the tick | [`deploy/azure.md`](deploy/azure.md) |
 
-Everything is configured through env vars (`.env.example` lists them all). Outgoing HTTPS uses the operating-system trust store (`truststore`), so it also works behind corporate or antivirus TLS proxies.
+Secrets, URLs and keys are configured through env vars (`.env.example` lists them all). **What is mocked vs. real** is set only in [`config.yaml`](config.yaml): one `mocked: true|false` flag each for weather, geocoding, sensors, caller_requests, recommender and delivery, plus the planner strategy. `mocked: false` is strict: mock input is rejected (422) and existing mock records are ignored, and a missing real configuration (e.g. `RECOMMENDER_URL`) stops the app at startup. `GET /health` reports the active flags under `mocks`; see the README table. Outgoing HTTPS uses the operating-system trust store (`truststore`), so it also works behind corporate or antivirus TLS proxies.
 
 **Vercel specifics:**
 - When `VERCEL=1`, the app disables SQLAlchemy pooling, because Neon's pooler handles it. It also refuses to start on SQLite.

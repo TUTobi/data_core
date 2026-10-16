@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import JSON, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import JSON, ForeignKey, Index, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from data_core.db.base import Base
@@ -93,6 +93,8 @@ class CallerRequest(Base):
     reported_event_time: Mapped[datetime | None]
     callback_url: Mapped[str | None] = mapped_column(String(500))
     extra: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Demo/mock call (channel "demo" or extra.demo=true); hidden when config.yaml caller_requests.mocked=false.
+    is_mock: Mapped[bool] = mapped_column(default=False, server_default=false(), index=True)
 
     case: Mapped["Case | None"] = relationship(back_populates="request")
 

@@ -26,11 +26,18 @@ def build_context(session: Session, case: Case, services: Services, settings: Se
     gaps: list[str] = []
     warnings: list[str] = []
 
+    runtime = services.runtime
+    if runtime.recommender.mocked:
+        warnings.append("Recommendation is mocked (built-in heuristic, not a disease model)")
+    if req.is_mock:
+        warnings.append("This call is demo/mock data")
+
     has_location = req.lat is not None and req.lon is not None
     if not has_location:
         gaps.append("Caller location unknown: weather, sensor and caller-history lookups skipped")
     elif req.location_source == "geocoded":
-        warnings.append(f"Location approximated from place name {req.location_name!r}")
+        source = "mock gazetteer" if runtime.geocoding.mocked else "place name"
+        warnings.append(f"Location approximated from {source} {req.location_name!r}")
 
     for need in plan.needs if has_location else []:
         try:
@@ -87,7 +94,10 @@ def _collect(session, need: DataNeed, req, evidence: Evidence, gaps, warnings, s
             warnings.append("Weather data is mocked")
 
     elif need.source == "sensors":
-        evidence.sensors = nearby_sensor_evidence(session, req.lat, req.lon, radius, lookback, now, need.metrics)
+        evidence.sensors = nearby_sensor_evidence(
+            session, req.lat, req.lon, radius, lookback, now, need.metrics,
+            include_mocked=services.runtime.sensors.mocked,
+        )
         if not evidence.sensors:
             gaps.append(f"No sensor readings within {radius:g} km in the last {lookback} h")
         if any(s.quality == "mocked" for s in evidence.sensors):
@@ -97,4 +107,9 @@ def _collect(session, need: DataNeed, req, evidence: Evidence, gaps, warnings, s
             warnings.append(f"Stale sensor data (> {STALE_SENSOR_AFTER_S // 3600} h old): {', '.join(stale)}")
 
     elif need.source == "caller_history":
-        evidence.caller_history = similar_reports(session, req, req.lat, req.lon, radius, lookback, now, need.filters)
+        evidence.caller_history = similar_reports(
+            session, req, req.lat, req.lon, radius, lookback, now, need.filters,
+            include_mock=services.runtime.caller_requests.mocked,
+        )
+        if any(r.is_mock for r in evidence.caller_history.items):
+            warnings.append("Some previous reports are demo/mock data")

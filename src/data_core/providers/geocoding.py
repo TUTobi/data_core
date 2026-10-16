@@ -18,6 +18,25 @@ class Geocoder(Protocol):
     def geocode(self, name: str) -> GeoResult | None: ...
 
 
+class MockGeocoder:
+    """Offline stand-in (config.yaml: geocoding.mocked=true): a few demo places, anything else is unknown."""
+
+    PLACES = {
+        "nairobi": (-1.2921, 36.8219),
+        "kiambu": (-1.1714, 36.8356),
+        "thika": (-1.0333, 37.0693),
+        "machakos": (-1.5177, 37.2634),
+        "nyeri": (-0.4201, 36.9476),
+        "nakuru": (-0.3031, 36.0800),
+    }
+
+    def geocode(self, name: str) -> GeoResult | None:
+        hit = self.PLACES.get(name.strip().lower())
+        if hit is None:
+            return None
+        return GeoResult(lat=hit[0], lon=hit[1], name=f"{name.strip().title()} (mock gazetteer)", precision_m=5000.0)
+
+
 class OpenMeteoGeocoder:
     URL = "https://geocoding-api.open-meteo.com/v1/search"
     # A place-name match is only a rough position (village/town centre).

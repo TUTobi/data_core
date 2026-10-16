@@ -489,6 +489,12 @@
           ],
           "default": null,
           "title": "Disease"
+        },
+        "is_mock": {
+          "default": false,
+          "description": "Demo/mock call (channel 'demo' / extra.demo)",
+          "title": "Is Mock",
+          "type": "boolean"
         }
       },
       "required": [

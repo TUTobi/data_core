@@ -11,6 +11,11 @@ from data_core.timeutil import utcnow
 log = logging.getLogger(__name__)
 
 
+def is_mock_request(data: CallerRequestIn) -> bool:
+    """Demo/mock calls, e.g. from mocks/seed_demo.py."""
+    return data.channel == "demo" or data.extra.get("demo") is True
+
+
 def find_by_external_id(session: Session, external_id: str) -> CallerRequest | None:
     return session.scalars(select(CallerRequest).where(CallerRequest.external_id == external_id)).first()
 
@@ -56,6 +61,7 @@ def create_request(session: Session, data: CallerRequestIn, geocoder: Geocoder |
         reported_event_time=data.reported_event_time,
         callback_url=str(data.callback_url) if data.callback_url else None,
         extra=data.extra,
+        is_mock=is_mock_request(data),
     )
     case = Case(request=request, status=CaseStatus.RECEIVED)
     session.add(case)
