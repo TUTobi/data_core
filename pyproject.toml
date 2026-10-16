@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "data-core"
+version = "0.1.0"
+description = "Data-Sync & Core: sensor/caller ingestion, data retrieval and recommender orchestration"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "respx>=0.21",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/data_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
