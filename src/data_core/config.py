@@ -1,5 +1,6 @@
 """Runtime configuration (12-factor: everything comes from env vars / .env)."""
 
+import os
 from functools import lru_cache
 from typing import Literal
 
@@ -13,6 +14,8 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data_core.db"
     # Convenient for local dev / demo; use `alembic upgrade head` in deployments.
     create_tables_on_startup: bool = True
+    # Disable SQLAlchemy connection pooling (automatically on when running on Vercel).
+    db_null_pool: bool = False
 
     # --- auth (comma-separated API keys per client role) ---------------------
     auth_disabled: bool = False
@@ -51,6 +54,11 @@ class Settings(BaseSettings):
     def keys_for(self, role: str) -> set[str]:
         raw = getattr(self, f"{role}_keys", "")
         return {k.strip() for k in raw.split(",") if k.strip()}
+
+
+def running_on_vercel() -> bool:
+    # Vercel sets VERCEL=1 in every build and function environment.
+    return bool(os.environ.get("VERCEL"))
 
 
 @lru_cache

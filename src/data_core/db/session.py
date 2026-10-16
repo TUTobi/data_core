@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 def normalize_database_url(url: str) -> str:
@@ -11,12 +12,19 @@ def normalize_database_url(url: str) -> str:
     return url
 
 
-def make_engine(database_url: str) -> Engine:
+def make_engine(database_url: str, null_pool: bool = False) -> Engine:
+    """`null_pool=True` opens a fresh connection per checkout - right for serverless (Vercel), where
+    instances freeze between requests and pooling is done by the DB provider (e.g. Neon's PgBouncer)."""
     url = normalize_database_url(database_url)
     is_sqlite = url.startswith("sqlite")
     kwargs: dict = {"pool_pre_ping": True}
     if is_sqlite:
         kwargs["connect_args"] = {"check_same_thread": False}
+    elif url.startswith("postgresql+psycopg"):
+        # No server-side prepared statements: they break behind transaction-mode poolers (PgBouncer).
+        kwargs["connect_args"] = {"prepare_threshold": None}
+    if null_pool:
+        kwargs["poolclass"] = NullPool
     engine = create_engine(url, **kwargs)
 
     if is_sqlite:

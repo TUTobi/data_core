@@ -41,6 +41,14 @@ curl localhost:8002/received
 docker compose up --build      # API + Postgres + mock recommender + webhook sink + tick cron
 ```
 
+## Deployment
+
+| Option | When | Guide |
+|---|---|---|
+| **Vercel** (Hobby) + Neon Postgres | Hosted demo; `npx vercel deploy --prod` | [`deploy/vercel.md`](deploy/vercel.md) |
+| Azure Container Apps + PostgreSQL | Docker-based hosting | [`deploy/azure.md`](deploy/azure.md) |
+| Docker / local | Development, full stack with mocks | above |
+
 ## Tests
 
 ```bash

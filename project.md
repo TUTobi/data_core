@@ -325,15 +325,27 @@ Migrations live in `alembic/versions` (`alembic upgrade head`). For quick demos 
 | Target | Setup | Notes |
 |---|---|---|
 | **Local** | `uvicorn` + SQLite, or `docker compose up` (API + Postgres + mocks + tick) | see README |
-| **Azure** *(recommended, matches the overview)* | Container Apps + PostgreSQL Flexible Server + scheduled job for the tick | [`deploy/azure.md`](deploy/azure.md) |
-| **Vercel** | `api/index.py` as a serverless function + Neon Postgres + Vercel Cron | [`deploy/vercel.md`](deploy/vercel.md) |
+| **Vercel** *(chosen for hosting)* | Hobby plan: `api/index.py` as a serverless function + **Neon** Postgres + **daily** Vercel Cron for the tick | [`deploy/vercel.md`](deploy/vercel.md) |
+| **Azure** *(alternative)* | Container Apps + PostgreSQL Flexible Server + scheduled job for the tick | [`deploy/azure.md`](deploy/azure.md) |
 
 Everything is configured through env vars (`.env.example` lists them all). Outgoing HTTPS uses the operating-system trust store (`truststore`), so it also works behind corporate or antivirus TLS proxies.
+
+**Vercel specifics:**
+- When `VERCEL=1`, the app disables SQLAlchemy pooling, because Neon's pooler handles it. It also refuses to start on SQLite.
+- psycopg runs without server-side prepared statements, so it is safe behind PgBouncer.
+- The schema is created from a laptop with `alembic upgrade head` against Neon's unpooled URL.
+
+**The cron pulls no data.** `/internal/tick` only:
+- retries failed webhooks,
+- resumes failed cases,
+- prunes the weather cache.
+
+On Hobby it runs daily. Normal requests never depend on it; manual retries go through `POST /v1/cases/{id}/retry`.
 
 ---
 
 ## 10. Quality and verification
-- `pytest`: 17 tests covering:
+- `pytest`: 22 tests, including the Vercel deploy configuration (SQLite guard, pooling, Neon URLs), covering:
   - auth and idempotent sensor ingestion,
   - input aliases,
   - the end-to-end request → delivery flow including signature checks,
@@ -342,6 +354,7 @@ Everything is configured through env vars (`.env.example` lists them all). Outgo
   - webhook failure → retry via tick,
   - Open-Meteo parsing, caching and retry.
 - Live run (2026-10-16), with real Open-Meteo, the mock recommender, the webhook sink and the Pi simulator: a place-name-only request (`"Kiambu"`) was geocoded, enriched with real weather, nearby sensor data and a previous caller, then recommended and delivered. Both webhook signatures were valid. Real payloads are in `contracts/examples/`.
+- Vercel import path simulated locally (`VERCEL=1`): a Neon URL loads with NullPool and psycopg 3, while SQLite is refused with a clear error.
 - Not yet tested: Docker images, Postgres at runtime (the migration SQL is rendered and checked), and the actual Azure/Vercel deployments.
 
 ---

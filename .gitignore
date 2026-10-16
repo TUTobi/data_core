@@ -4,5 +4,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .env
+.env.*
+!.env.example
 *.db
 .vercel

@@ -1,8 +1,7 @@
-# Runtime deps (mirrors pyproject.toml) - used by Vercel's Python builder.
+# Runtime deps for the Vercel function (dev/full spec: pyproject.toml).
+# No uvicorn (Vercel provides the ASGI server) and no alembic (migrations run from a laptop).
 fastapi>=0.115
-uvicorn[standard]>=0.30
 sqlalchemy>=2.0.36
-alembic>=1.13
 psycopg[binary]>=3.2
 pydantic>=2.9
 pydantic-settings>=2.5

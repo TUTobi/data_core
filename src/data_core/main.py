@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from data_core import __version__
 from data_core.api import cases, internal, observations, requests, sensors
-from data_core.config import Settings, get_settings
+from data_core.config import Settings, get_settings, running_on_vercel
 from data_core.db.base import Base
 from data_core.db.session import make_engine, make_sessionmaker
 from data_core.services import Services, build_services
@@ -26,7 +26,13 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     """App factory. Everything is initialised eagerly (not only in lifespan) so the app also works on
     serverless runtimes that don't run ASGI lifespan events."""
     settings = settings or get_settings()
-    engine = make_engine(settings.database_url)
+    on_vercel = running_on_vercel()
+    if on_vercel and settings.database_url.startswith("sqlite"):
+        raise RuntimeError(
+            "DATABASE_URL points to SQLite, which can't persist on Vercel. "
+            "Set DATABASE_URL to a Postgres URL (e.g. Neon from the Vercel Marketplace)."
+        )
+    engine = make_engine(settings.database_url, null_pool=settings.db_null_pool or on_vercel)
     if settings.create_tables_on_startup:
         Base.metadata.create_all(engine)
     services = services or build_services(settings)
