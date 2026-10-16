@@ -15,7 +15,7 @@ geocoding:
   mocked: false     # false: Open-Meteo place search for village names | true: small built-in demo gazetteer
 
 sensors:
-  mocked: false      # true: readings with quality "mocked" (mocks/pi_simulator.py) are accepted and used
+  mocked: true      # true: readings with quality "mocked" (mocks/pi_simulator.py) are accepted and used
                     # false: such readings are rejected (422) and existing ones are ignored everywhere
 
 caller_requests:
