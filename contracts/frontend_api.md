@@ -322,7 +322,7 @@ DataNeed = { source: "sensors" | "weather" | "caller_history";
              filters: object; priority: "required" | "optional"; reason: string }
 ```
 
-With the current defaults: weather (72 h back, 48 h forecast), sensors within 10 km over 72 h, caller history within 10 km over 72 h.
+With the current defaults: weather (72 h back, 48 h forecast), the latest sensor reading in the DB (any sensor, any location or age), caller history within 10 km over 72 h.
 
 **`evidence.weather`: `WeatherEvidence | null`** (`null` if the caller location is unknown or weather failed, in which case there is a gap entry)
 
@@ -349,7 +349,7 @@ With the current defaults: weather (72 h back, 48 h forecast), sensors within 10
 | `hours_rh_ge_90` | int \| null | Hours with humidity ≥ 90 % (leaf-wetness proxy, key disease indicator) |
 | `mean_soil_moisture` | float \| null | Volumetric, m³/m³ (0–1), top 1 cm |
 
-**`evidence.sensors`: `SensorEvidence[]`**: one entry per (sensor, metric) within the radius/window, nearest first. Empty if none.
+**`evidence.sensors`: `SensorEvidence[]`**: the **most recent sensor reading in the database**, regardless of the caller's location or its age: one entry per metric that sensor sent at that timestamp (so `n_readings` is 1 and `mean`/`min`/`max` equal `latest_value`). Empty only if the DB has no readings. Check `age_s` (and the stale-data warning) before treating it as current.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -360,7 +360,7 @@ With the current defaults: weather (72 h back, 48 h forecast), sensors within 10
 | `latest_at` | datetime | Time of the most recent value |
 | `mean`, `min`, `max` | float | Over the window |
 | `n_readings` | int | Readings aggregated |
-| `distance_km` | float | Distance from the caller |
+| `distance_km` | float \| null | Distance from the caller; `null` if the caller or the sensor has no position |
 | `age_s` | int | Age of `latest_value` at context time. > 21 600 s (6 h) produces a "stale" warning |
 | `quality` | string | Worst quality in the window: `ok` < `mocked` < `suspect` |
 
@@ -378,8 +378,8 @@ With the current defaults: weather (72 h back, 48 h forecast), sensors within 10
 These items contain a `request_id`, not a case id. To link to the earlier case, query `GET /v1/cases` (there is no lookup by request id).
 
 **Possible `gaps` strings** (match on prefixes, the texts are not a formal enum):
-- `"Caller location unknown: weather, sensor and caller-history lookups skipped"`
-- `"No sensor readings within 10 km in the last 72 h"`
+- `"Caller location unknown: weather and caller-history lookups skipped"`
+- `"No sensor readings in the database"`
 - `"<source> unavailable: <ErrorType>: <message>"` (e.g. weather API down)
 
 **Possible `warnings` strings:**
@@ -413,24 +413,24 @@ Sensors auto-register on their first reading, so most of them have `name`, `kind
 
 ---
 
-### 4.7 `GET /v1/observations`: raw readings (and weather) around a point
+### 4.7 `GET /v1/observations`: latest sensor reading (and weather at a point)
 
-Use it for sensor charts/time series and current weather at a map location.
+Returns the **most recent sensor reading in the database**, regardless of location or age (one row per metric that sensor sent at that timestamp), plus optional weather at `lat`/`lon`. There is no sensor time series anymore.
 
 | Query param | Type | Default | Constraint / meaning |
 |---|---|---|---|
 | `lat` | float | **required** | -90…90 |
 | `lon` | float | **required** | -180…180 |
-| `radius_km` | float | `10` | > 0, ≤ 200 |
-| `since_h` | int | `72` | 1–744. Readings with `recorded_at` within the last N hours |
-| `metric` | string | – | Only this metric (e.g. `humidity_pct`) |
+| `radius_km` | float | `10` | > 0, ≤ 200. Accepted for compatibility, **ignored** |
+| `since_h` | int | `72` | 1–744. Only the weather past window; sensor readings are not age-limited |
+| `metric` | string | – | The latest reading of this metric (e.g. `humidity_pct`) instead of the latest reading overall |
 | `include_weather` | bool | `false` | Also return `WeatherEvidence` for the point (past window = `since_h`, forecast 48 h) |
 | `limit` | int | `1000` | 1–5000, max readings returned |
 
 **Response**
 
 ```ts
-{ sensors: SensorReadingOut[];       // newest first (by recorded_at), across all sensors/metrics in range
+{ sensors: SensorReadingOut[];       // the latest reading: same sensor_id/recorded_at, one row per metric; [] if the DB has none
   weather: WeatherEvidence | null }  // null unless include_weather=true
 ```
 
@@ -556,7 +556,7 @@ export interface SensorEvidence {
   sensor_id: string; metric: string; unit: string | null;
   latest_value: number; latest_at: ISODateTime;
   mean: number; min: number; max: number; n_readings: number;
-  distance_km: number; age_s: number; quality: "ok" | "suspect" | "mocked";
+  distance_km: number | null; age_s: number; quality: "ok" | "suspect" | "mocked";
 }
 
 export interface SimilarReport {
@@ -648,7 +648,7 @@ async function api<T>(path: string, params: Record<string, string | number | boo
 | "Why this recommendation?" panel | `GET /v1/cases/{id}/context` | Weather at call time, sensors used, similar nearby reports, `gaps`, `warnings` |
 | Weather at the time of the call | `/context` → `evidence.weather` | Historic snapshot. Weather "now" comes from `/v1/observations?include_weather=true` |
 | Sensor map / online status | `GET /v1/sensors` | Online if `now - last_seen_at` < threshold you choose |
-| Sensor time-series chart | `GET /v1/observations?lat=<sensor.lat>&lon=<sensor.lon>&radius_km=0.1&since_h=168` | Filter client-side by `sensor_id`. Add `metric=` to restrict |
+| Latest sensor reading | `GET /v1/observations?lat=…&lon=…&metric=humidity_pct` | Location-independent; check `recorded_at` for freshness |
 | Current weather at a point | `GET /v1/observations?lat=…&lon=…&include_weather=true&limit=1` | `weather.current`, `weather.forecast`, `weather.daily` |
 | Mark demo data | `request.channel === "demo"` or `request.extra.demo === true` | |
 | Call duration | `request.extra.duration_s` | Optional |
@@ -664,7 +664,7 @@ async function api<T>(path: string, params: Record<string, string | number | boo
 - No write endpoints for the dashboard: no editing cases or recommendations, no notes or acknowledgements.
 - No full-text search over `text`, no sorting options, no filtering by `crop`, `channel`, `risk_level` or `disease`. Do these client-side on the fetched page.
 - No lookup by `request_id` or `external_id` (the `/v1/cases` filters don't include them).
-- No per-sensor history endpoint. Use `/v1/observations` around the sensor's position.
+- No sensor history endpoint: `/v1/observations` only returns the latest reading.
 - No caller identity data beyond the pseudonymous `caller_ref`.
 - Vocabularies (`problem_type`, `crop`, `disease`, `metric`, `channel`) are open strings set by upstream systems, not fixed enums.
 - The recommender is currently a **mock** (`explanation` starts with `[MOCK RECOMMENDER]`, `disease` is `suspected_fungal_disease` or `null`).

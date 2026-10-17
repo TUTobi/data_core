@@ -43,19 +43,24 @@ def test_invalid_metric_name_rejected(client):
     assert r.status_code == 422
 
 
-def test_observations_radius_filter(client):
+def test_observations_return_latest_reading_regardless_of_location(client):
+    far_newest = _reading("far", hours_ago=1, lat=None, lon=None, humidity_pct=91.0, rain_mm=0.5)
     client.post(
         "/v1/sensor-readings",
-        json={"readings": [_reading("near"), _reading("far", lat=-1.29, lon=37.5)]},
+        json={"readings": [_reading("near", hours_ago=2), _reading("near", hours_ago=500), far_newest]},
         headers=auth("pi"),
     )
-    r = client.get(
-        "/v1/observations",
-        params={"lat": -1.29, "lon": 36.83, "radius_km": 5, "include_weather": True},
-        headers=auth("dashboard"),
-    )
+    params = {"lat": -1.29, "lon": 36.83, "radius_km": 5, "since_h": 72, "include_weather": True}
+    r = client.get("/v1/observations", params=params, headers=auth("dashboard"))
     assert r.status_code == 200
     body = r.json()
-    assert {o["sensor_id"] for o in body["sensors"]} == {"near"}
-    assert body["sensors"][0]["unit"] == "%"
+    assert [(o["sensor_id"], o["metric"], o["value"]) for o in body["sensors"]] == [
+        ("far", "humidity_pct", 91.0),
+        ("far", "rain_mm", 0.5),
+    ]
+    assert body["sensors"][0]["unit"] == "%" and body["sensors"][0]["distance_km"] is None
     assert body["weather"]["provider"] == "mock"
+
+    # `metric` picks the newest reading of that metric, wherever and whenever it was recorded.
+    r = client.get("/v1/observations", params={**params, "metric": "rain_mm"}, headers=auth("dashboard"))
+    assert [(o["sensor_id"], o["metric"]) for o in r.json()["sensors"]] == [("far", "rain_mm")]

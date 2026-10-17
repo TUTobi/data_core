@@ -1,12 +1,8 @@
-from datetime import timedelta
-
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from data_core.api.deps import AppServices, AppSettings, DbSession, require_role
-from data_core.db.models import SensorReading
-from data_core.geo import bounding_box, haversine_km
+from data_core.core.retrieval import distance_or_none, latest_sensor_readings
 from data_core.providers.weather.cached import fetch_weather_cached
 from data_core.schemas.context import WeatherEvidence
 from data_core.schemas.sensors import SensorReadingOut
@@ -33,28 +29,15 @@ def get_observations(
     include_weather: bool = False,
     limit: int = Query(1000, ge=1, le=5000),
 ) -> ObservationsOut:
-    """Raw sensor readings around a point (newest first), optionally with weather - for the dashboard."""
-    now = utcnow()
-    min_lat, max_lat, min_lon, max_lon = bounding_box(lat, lon, radius_km)
-    stmt = select(SensorReading).where(
-        SensorReading.lat.between(min_lat, max_lat),
-        SensorReading.lon.between(min_lon, max_lon),
-        SensorReading.recorded_at >= now - timedelta(hours=since_h),
-    )
-    if metric:
-        stmt = stmt.where(SensorReading.metric == metric)
-    if not services.runtime.sensors.mocked:
-        stmt = stmt.where(SensorReading.quality != "mocked")
-
+    """The most recent sensor reading in the DB (optionally of one `metric`), regardless of location or age,
+    plus optional weather at `lat`/`lon` - for the dashboard. `radius_km` is accepted for compatibility but
+    ignored; `since_h` only sets the weather window."""
     readings = []
-    for r in db.scalars(stmt.order_by(SensorReading.recorded_at.desc())):
-        distance = haversine_km(lat, lon, r.lat, r.lon)
-        if distance <= radius_km:
-            out = SensorReadingOut.model_validate(r)
-            out.distance_km = round(distance, 3)
-            readings.append(out)
-            if len(readings) >= limit:
-                break
+    metrics = [metric] if metric else None
+    for r in latest_sensor_readings(db, utcnow(), metrics, include_mocked=services.runtime.sensors.mocked)[:limit]:
+        out = SensorReadingOut.model_validate(r)
+        out.distance_km = distance_or_none(lat, lon, r)
+        readings.append(out)
 
     weather = None
     if include_weather:

@@ -209,7 +209,7 @@ class DataNeed(BaseModel):          # one entry of the plan
     reason: str                     # traceability: why this data was requested
 ```
 
-Currently implemented is only the **`fetch_all` baseline**: weather (72 h back, 48 h ahead), sensors and caller history within 10 km / 72 h, all optional. Strategies are registered in `PLANNERS` and selected by `planner.strategy` in `config.yaml`, so replacing the logic doesn't affect anything else.
+Currently implemented is only the **`fetch_all` baseline**: weather (72 h back, 48 h ahead), the latest sensor reading (location-independent) and caller history within 10 km / 72 h, all optional. Strategies are registered in `PLANNERS` and selected by `planner.strategy` in `config.yaml`, so replacing the logic doesn't affect anything else.
 
 Candidate strategies once the requirements are known:
 
@@ -221,7 +221,7 @@ Candidate strategies once the requirements are known:
 | `hybrid` | Rules first, LLM for unknown cases, always a minimum baseline | Best coverage; more moving parts |
 
 ### 5.2 Retrieval
-- **Sensors** (`core/retrieval.py`): readings within the radius and window, aggregated per sensor and metric: latest value, mean/min/max, count, distance, age and worst quality. Readings older than 6 h trigger a warning.
+- **Sensors** (`core/retrieval.py`): the most recent reading in the DB, regardless of location or age (one entry per metric of that reading). `distance_km` is filled in only when caller and sensor both have a position. Readings older than 6 h trigger a warning.
 - **Previous callers:** requests within the radius and window, excluding the current one. They are flagged when they share the `problem_type` and include the disease the recommender found for them. This is the input for spotting regional clusters.
 - **Weather** (`providers/weather/`): Open-Meteo hourly data summarised per window:
   - rain sum,

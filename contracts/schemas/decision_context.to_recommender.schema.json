@@ -404,8 +404,15 @@
           "type": "integer"
         },
         "distance_km": {
-          "title": "Distance Km",
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Distance Km"
         },
         "age_s": {
           "title": "Age S",

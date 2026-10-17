@@ -58,7 +58,7 @@ Only `text` is required. Every other field improves the result, so send what you
 | `problem_type` | string | recommended | ≤ 64 chars. Normalised to lowercase snake_case. Not enforced, but please stick to: `crop_health`, `pests`, `weather_damage`, `soil`, `other` (the dashboard groups by it) |
 | `crop` | string | recommended | ≤ 64 chars, normalised to lowercase snake_case, e.g. `maize`, `beans`, `potato`, `cassava` |
 | `symptoms` | list of strings | – | Short phrases, e.g. `["yellow leaves", "brown spots"]`. A comma-separated string is also accepted |
-| `location` | object | **strongly recommended** | See below. Without a location there is no weather, sensor or nearby-reports evidence |
+| `location` | object | **strongly recommended** | See below. Without a location there is no weather or nearby-reports evidence (the latest sensor reading is included either way) |
 | `reported_event_time` | ISO-8601 datetime | – | When the problem started, if the farmer says so |
 | `callback_url` | URL | – | Where `data_core` should POST the result for this call (§5). Overrides the server-wide `PHONE_WEBHOOK_URL` |
 | `extra` | object | – | Anything else (language, duration, IVR path, ...). Stored as-is, not interpreted |

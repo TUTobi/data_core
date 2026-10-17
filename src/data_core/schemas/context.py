@@ -51,7 +51,7 @@ class SensorEvidence(BaseModel):
     min: float
     max: float
     n_readings: int
-    distance_km: float
+    distance_km: float | None  # null when the caller or the sensor has no position
     age_s: int
     quality: str
 

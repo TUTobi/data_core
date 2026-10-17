@@ -92,7 +92,8 @@ def test_sensors_not_mocked_rejects_and_ignores_mock_readings(make_client, webho
     strict = make_client(mocks={"sensors": False})  # same DB, sensors.mocked=false
     r = strict.post("/v1/sensor-readings", json=_reading("sim", "mocked", hours_ago=2), headers=auth("pi"))
     assert r.status_code == 422 and "sensors.mocked=false" in r.text
-    assert strict.post("/v1/sensor-readings", json=_reading("real", "ok"), headers=auth("pi")).status_code == 201
+    real = _reading("real", "ok", hours_ago=2)  # older than "sim", so only the mock filter can surface it
+    assert strict.post("/v1/sensor-readings", json=real, headers=auth("pi")).status_code == 201
 
     case = _call(strict, "Leaves wilting")
     ctx = strict.get(f"/v1/cases/{case['id']}/context", headers=auth("dashboard")).json()
@@ -101,9 +102,9 @@ def test_sensors_not_mocked_rejects_and_ignores_mock_readings(make_client, webho
 
     obs = strict.get("/v1/observations", params={"lat": LAT, "lon": LON}, headers=auth("dashboard")).json()
     assert {o["sensor_id"] for o in obs["sensors"]} == {"real"}
-    # with sensors mocked, the simulator data is visible again
+    # with sensors mocked, the (newer) simulator reading is the latest one again
     obs = mocked_ok.get("/v1/observations", params={"lat": LAT, "lon": LON}, headers=auth("dashboard")).json()
-    assert {o["sensor_id"] for o in obs["sensors"]} == {"real", "sim"}
+    assert {o["sensor_id"] for o in obs["sensors"]} == {"sim"}
 
 
 # --- caller requests ---------------------------------------------------------------------------------------

@@ -43,9 +43,7 @@ class FetchAllPlanner:
                 ),
                 DataNeed(
                     source="sensors",
-                    radius_km=self.radius_km,
-                    lookback_h=self.lookback_h,
-                    reason="Local field measurements near the caller",
+                    reason="Most recent field sensor reading (any sensor, location and age not considered)",
                 ),
                 DataNeed(
                     source="caller_history",

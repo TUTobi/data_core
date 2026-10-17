@@ -77,6 +77,30 @@ def test_end_to_end_request_to_delivery(client, webhooks):
     assert listed["total"] == 2
 
 
+def test_context_uses_latest_sensor_reading_regardless_of_location(client, webhooks):
+    now = datetime.now(UTC).replace(microsecond=0)
+    readings = [
+        # An older reading from a sensor right next to the caller ...
+        {"sensor_id": "pi-near", "recorded_at": (now - timedelta(hours=2)).isoformat(),
+         "lat": LAT, "lon": LON, "metrics": {"humidity_pct": 70.0}},
+        # ... loses against the newest reading, from a sensor without any position.
+        {"sensor_id": "arduino-far", "recorded_at": (now - timedelta(minutes=5)).isoformat(),
+         "metrics": {"rain_mm": 1.5, "humidity_pct": 91.0}},
+    ]
+    assert client.post("/v1/sensor-readings", json={"readings": readings}, headers=auth("pi")).status_code == 201
+
+    for body in ({"text": "Leaves turning yellow", "lat": LAT, "lon": LON}, {"text": "Leaves turning yellow"}):
+        r = client.post("/v1/requests", json=body, headers=auth("input"))
+        ctx = client.get(f"/v1/cases/{r.json()['id']}/context", headers=auth("dashboard")).json()
+        sensors = ctx["evidence"]["sensors"]
+        assert {(s["sensor_id"], s["metric"], s["latest_value"]) for s in sensors} == {
+            ("arduino-far", "humidity_pct", 91.0),
+            ("arduino-far", "rain_mm", 1.5),
+        }
+        assert all(s["distance_km"] is None and s["n_readings"] == 1 for s in sensors)
+        assert not any("sensor" in g.lower() for g in ctx["gaps"])
+
+
 def test_request_without_location_reports_gap(client, webhooks):
     r = client.post("/v1/requests", json={"text": "My goats are coughing"}, headers=auth("input"))
     assert r.status_code == 201

@@ -5,7 +5,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from data_core.config import Settings
-from data_core.core.retrieval import nearby_sensor_evidence, similar_reports
+from data_core.core.retrieval import latest_sensor_evidence, similar_reports
 from data_core.db.models import Case
 from data_core.providers.weather.cached import fetch_weather_cached
 from data_core.schemas.context import DataNeed, DecisionContext, Evidence, RequestSummary
@@ -34,12 +34,14 @@ def build_context(session: Session, case: Case, services: Services, settings: Se
 
     has_location = req.lat is not None and req.lon is not None
     if not has_location:
-        gaps.append("Caller location unknown: weather, sensor and caller-history lookups skipped")
+        gaps.append("Caller location unknown: weather and caller-history lookups skipped")
     elif req.location_source == "geocoded":
         source = "mock gazetteer" if runtime.geocoding.mocked else "place name"
         warnings.append(f"Location approximated from {source} {req.location_name!r}")
 
-    for need in plan.needs if has_location else []:
+    for need in plan.needs:
+        if not has_location and need.source != "sensors":  # the latest sensor reading is location-independent
+            continue
         try:
             _collect(session, need, req, evidence, gaps, warnings, services, settings, now)
         except Exception as exc:
@@ -94,12 +96,12 @@ def _collect(session, need: DataNeed, req, evidence: Evidence, gaps, warnings, s
             warnings.append("Weather data is mocked")
 
     elif need.source == "sensors":
-        evidence.sensors = nearby_sensor_evidence(
-            session, req.lat, req.lon, radius, lookback, now, need.metrics,
+        evidence.sensors = latest_sensor_evidence(
+            session, now, req.lat, req.lon, need.metrics,
             include_mocked=services.runtime.sensors.mocked,
         )
         if not evidence.sensors:
-            gaps.append(f"No sensor readings within {radius:g} km in the last {lookback} h")
+            gaps.append("No sensor readings in the database")
         if any(s.quality == "mocked" for s in evidence.sensors):
             warnings.append("Some sensor data is mocked")
         stale = sorted({s.sensor_id for s in evidence.sensors if s.age_s > STALE_SENSOR_AFTER_S})

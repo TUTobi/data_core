@@ -1,8 +1,6 @@
-"""DB lookups for the decision context: nearby sensor readings and similar previous caller reports."""
+"""DB lookups for the decision context: the latest sensor reading and similar previous caller reports."""
 
-from collections import defaultdict
 from datetime import datetime, timedelta
-from statistics import fmean
 from typing import Any
 
 from sqlalchemy import select
@@ -13,62 +11,65 @@ from data_core.geo import bounding_box, haversine_km
 from data_core.schemas.context import CallerHistoryEvidence, SensorEvidence, SimilarReport
 from data_core.timeutil import as_utc
 
-_QUALITY_RANK = {"ok": 0, "mocked": 1, "suspect": 2}
 
-
-def nearby_sensor_evidence(
+def latest_sensor_readings(
     session: Session,
-    lat: float,
-    lon: float,
-    radius_km: float,
-    lookback_h: int,
     now: datetime,
     metrics: list[str] | None = None,
     include_mocked: bool = True,
-) -> list[SensorEvidence]:
-    """Aggregate readings per (sensor, metric) within radius and time window, nearest first.
+) -> list[SensorReading]:
+    """The most recent sensor reading in the DB, regardless of location or age: one row per metric
+    the sensor sent at that timestamp, sorted by metric.
     `include_mocked=False` drops readings flagged quality "mocked" (config.yaml sensors.mocked=false)."""
-    min_lat, max_lat, min_lon, max_lon = bounding_box(lat, lon, radius_km)
-    stmt = select(SensorReading).where(
-        SensorReading.lat.between(min_lat, max_lat),
-        SensorReading.lon.between(min_lon, max_lon),
-        SensorReading.recorded_at >= now - timedelta(hours=lookback_h),
-        SensorReading.recorded_at <= now,
-    )
+    stmt = select(SensorReading).where(SensorReading.recorded_at <= now)
     if metrics:
         stmt = stmt.where(SensorReading.metric.in_(metrics))
     if not include_mocked:
         stmt = stmt.where(SensorReading.quality != "mocked")
 
-    groups: dict[tuple[str, str], list[tuple[SensorReading, float]]] = defaultdict(list)
-    for reading in session.scalars(stmt):
-        distance = haversine_km(lat, lon, reading.lat, reading.lon)
-        if distance <= radius_km:
-            groups[(reading.sensor_id, reading.metric)].append((reading, distance))
+    newest = session.scalars(stmt.order_by(SensorReading.recorded_at.desc()).limit(1)).first()
+    if newest is None:
+        return []
+    return list(session.scalars(
+        stmt.where(SensorReading.sensor_id == newest.sensor_id, SensorReading.recorded_at == newest.recorded_at)
+        .order_by(SensorReading.metric)
+    ))
 
+
+def distance_or_none(lat: float | None, lon: float | None, reading: SensorReading) -> float | None:
+    if None in (lat, lon, reading.lat, reading.lon):
+        return None
+    return round(haversine_km(lat, lon, reading.lat, reading.lon), 3)
+
+
+def latest_sensor_evidence(
+    session: Session,
+    now: datetime,
+    lat: float | None = None,
+    lon: float | None = None,
+    metrics: list[str] | None = None,
+    include_mocked: bool = True,
+) -> list[SensorEvidence]:
+    """`latest_sensor_readings` as evidence. `lat`/`lon` only fill in `distance_km` when both sides are known."""
     evidence = []
-    for (sensor_id, metric), items in groups.items():
-        items.sort(key=lambda item: as_utc(item[0].recorded_at))
-        latest, distance = items[-1]
-        values = [r.value for r, _ in items]
-        latest_at = as_utc(latest.recorded_at)
+    for reading in latest_sensor_readings(session, now, metrics, include_mocked):
+        recorded_at = as_utc(reading.recorded_at)
         evidence.append(
             SensorEvidence(
-                sensor_id=sensor_id,
-                metric=metric,
-                unit=latest.unit,
-                latest_value=latest.value,
-                latest_at=latest_at,
-                mean=round(fmean(values), 3),
-                min=min(values),
-                max=max(values),
-                n_readings=len(values),
-                distance_km=round(distance, 3),
-                age_s=int((now - latest_at).total_seconds()),
-                quality=max((r.quality for r, _ in items), key=lambda q: _QUALITY_RANK.get(q, 3)),
+                sensor_id=reading.sensor_id,
+                metric=reading.metric,
+                unit=reading.unit,
+                latest_value=reading.value,
+                latest_at=recorded_at,
+                mean=reading.value,
+                min=reading.value,
+                max=reading.value,
+                n_readings=1,
+                distance_km=distance_or_none(lat, lon, reading),
+                age_s=int((now - recorded_at).total_seconds()),
+                quality=reading.quality,
             )
         )
-    evidence.sort(key=lambda e: (e.distance_km, e.sensor_id, e.metric))
     return evidence
 
 

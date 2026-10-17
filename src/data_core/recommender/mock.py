@@ -28,7 +28,8 @@ class MockRecommender:
         if humid_sensors:
             score += 1
             s = humid_sensors[0]
-            reasons.append(f"field sensor {s.sensor_id} reports mean humidity {s.mean} % ({s.distance_km} km away)")
+            where = "" if s.distance_km is None else f" ({s.distance_km} km away)"
+            reasons.append(f"field sensor {s.sensor_id} reports mean humidity {s.mean} %{where}")
 
         history = ev.caller_history
         if history and history.same_problem_count >= 3:

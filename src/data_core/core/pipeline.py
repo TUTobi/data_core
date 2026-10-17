@@ -144,7 +144,7 @@ def evidence_summary(context: DecisionContext) -> list[str]:
     for sensor in context.evidence.sensors[:5]:
         lines.append(
             f"Sensor {sensor.sensor_id}: {sensor.metric} = {sensor.latest_value}{sensor.unit or ''} "
-            f"({sensor.distance_km} km away, {sensor.age_s // 60} min old)"
+            f"({'' if sensor.distance_km is None else f'{sensor.distance_km} km away, '}{sensor.age_s // 60} min old)"
         )
     history = context.evidence.caller_history
     if history:
