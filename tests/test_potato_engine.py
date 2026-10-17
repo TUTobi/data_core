@@ -58,6 +58,10 @@ def test_call_is_translated_for_the_engine(engine):
     assert sent["temperatures"][-1]["date"] < datetime.now(UTC).date().isoformat()
     assert sent["wetness_hourly"] and all(120 <= w["value"] <= 3600 for w in sent["wetness_hourly"])
     assert sent["plant_description"] == "Dark patches on leaves Crop: potato. Symptoms: white fuzz."
+    context = sent["context"]  # the full DecisionContext rides along for the engine's LLM
+    assert context["request"]["text"] == "Dark patches on leaves"
+    assert context["evidence"]["caller_history"] is not None
+    assert context["evidence"]["weather"]["hourly"]
 
     rec = r.json()["recommendation"]
     assert rec["disease"] == "Late blight"
@@ -84,6 +88,10 @@ def test_nearby_soil_sensor_is_the_current_reading(engine):
     last = json.loads(router["engine"].calls.last.request.content)["wetness_hourly"][-1]
     assert last["value"] == 3400
     assert datetime.fromisoformat(last["timestamp"]) == recorded
+
+    sensor = json.loads(router["engine"].calls.last.request.content)["context"]["evidence"]["sensors"][0]
+    assert sensor["sensor_id"] == "pi-soil-01"
+    assert [p["value"] for p in sensor["readings"]] == [3400]
 
 
 def test_call_without_location_fails_recommendation(engine):

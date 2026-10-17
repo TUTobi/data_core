@@ -41,6 +41,11 @@ class RequestSummary(BaseModel):
     reported_event_time: UtcDatetime | None
 
 
+class SensorPoint(BaseModel):
+    t: UtcDatetime
+    value: float
+
+
 class SensorEvidence(BaseModel):
     sensor_id: str
     metric: str
@@ -54,6 +59,9 @@ class SensorEvidence(BaseModel):
     distance_km: float
     age_s: int
     quality: str
+    readings: list[SensorPoint] = Field(
+        default_factory=list, description="Raw readings oldest -> newest (most recent MAX_SENSOR_POINTS)"
+    )
 
 
 class WeatherWindow(BaseModel):
@@ -78,6 +86,9 @@ class WeatherEvidence(BaseModel):
     past: WeatherWindow
     forecast: WeatherWindow
     daily: list[dict[str, Any]] = Field(default_factory=list)
+    hourly: list[dict[str, Any]] = Field(
+        default_factory=list, description="Hourly rows (time + weather values) across the past and forecast windows"
+    )
 
 
 class SimilarReport(BaseModel):

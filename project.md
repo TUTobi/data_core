@@ -209,7 +209,7 @@ class DataNeed(BaseModel):          # one entry of the plan
     reason: str                     # traceability: why this data was requested
 ```
 
-Currently implemented is only the **`fetch_all` baseline**: weather (72 h back, 48 h ahead), sensors and caller history within 10 km / 72 h, all optional. Strategies are registered in `PLANNERS` and selected by `planner.strategy` in `config.yaml`, so replacing the logic doesn't affect anything else.
+Currently implemented is only the **`fetch_all` baseline**: weather (14 days back, 48 h ahead), sensors and caller history within 50 km / 14 days, all optional. Strategies are registered in `PLANNERS` and selected by `planner.strategy` in `config.yaml`, so replacing the logic doesn't affect anything else.
 
 Candidate strategies once the requirements are known:
 
@@ -368,7 +368,7 @@ On Hobby it runs daily. Normal requests never depend on it; manual retries go th
 | 3 | Recommender API: sync HTTP OK? latency? auth? | Recommender team | Contract proposed (§5.4) |
 | 4 | Dashboard: webhook push, polling, or both? | Dashboard team | Both offered |
 | 5 | Which sensors/metrics beyond humidity and temperature, and how often does the Pi post? | Hardware | Open; any snake_case metric is accepted |
-| 6 | Default radius / time windows (10 km / 72 h / 48 h) | Domain input | Provisional, configurable |
+| 6 | Default radius / time windows (50 km / 14 d / 48 h) | Domain input | Provisional, configurable |
 | 7 | Azure SQL vs PostgreSQL | Team / Azure setup | Postgres chosen for portability |
 | 8 | Data protection: retention of caller data, location precision | Team | `caller_ref` is pseudonymous; retention not implemented |
 

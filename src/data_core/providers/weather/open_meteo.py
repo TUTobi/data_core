@@ -85,4 +85,10 @@ def parse_forecast(
         past=summarize_window(past, past_h),
         forecast=summarize_window(future, forecast_h),
         daily=daily,
+        hourly=hourly_rows(past + future),
     )
+
+
+def hourly_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Hourly rows as JSON-friendly dicts (ISO time) for the recommender."""
+    return [{**r, "time": r["time"].isoformat()} for r in rows]

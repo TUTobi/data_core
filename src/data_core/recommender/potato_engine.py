@@ -3,6 +3,8 @@
 The engine has its own input format: 30 daily temperatures, an hourly raw soil-wetness series and a free-text
 plant description. This adapter builds that from the DecisionContext plus one extra Open-Meteo call (30 days of
 history), and maps the engine's disease probabilities back onto a RecommendationResult.
+The full DecisionContext (caller history, all nearby sensors, hourly weather, gaps, warnings) is sent along as
+the optional `context` field, so the engine's LLM sees everything the core gathered.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -67,6 +69,7 @@ class PotatoEngineRecommender:
                 "temperatures": temperatures,
                 "wetness_hourly": wetness,
                 "plant_description": self._description(context),
+                "context": context.model_dump(mode="json"),
             },
             timeout=self.timeout_s,
         )

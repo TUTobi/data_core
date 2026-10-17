@@ -36,4 +36,5 @@ class MockWeatherProvider:
             current={k: v for k, v in past[-1].items() if k != "time"},
             past=summarize_window(past, past_h),
             forecast=summarize_window(future, forecast_h),
+            hourly=[{**r, "time": r["time"].isoformat()} for r in rows],
         )

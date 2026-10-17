@@ -414,6 +414,14 @@
         "quality": {
           "title": "Quality",
           "type": "string"
+        },
+        "readings": {
+          "description": "Raw readings oldest -> newest (most recent MAX_SENSOR_POINTS)",
+          "items": {
+            "$ref": "#/$defs/SensorPoint"
+          },
+          "title": "Readings",
+          "type": "array"
         }
       },
       "required": [
@@ -431,6 +439,25 @@
         "quality"
       ],
       "title": "SensorEvidence",
+      "type": "object"
+    },
+    "SensorPoint": {
+      "properties": {
+        "t": {
+          "format": "date-time",
+          "title": "T",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "t",
+        "value"
+      ],
+      "title": "SensorPoint",
       "type": "object"
     },
     "SimilarReport": {
@@ -550,6 +577,15 @@
             "type": "object"
           },
           "title": "Daily",
+          "type": "array"
+        },
+        "hourly": {
+          "description": "Hourly rows (time + weather values) across the past and forecast windows",
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Hourly",
           "type": "array"
         }
       },

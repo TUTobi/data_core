@@ -56,7 +56,7 @@ Send either **one reading** or a **batch** `{"readings": [...]}` with 1–1000 r
 
 **Location:** a device without GPS should send `lat`/`lon` at least once (or register via §6). Readings without
 any known position are stored but **never used** for recommendations, because the core searches sensors by
-distance to the caller (default radius 10 km, last 72 h).
+distance to the caller (default radius 50 km, last 336 h / 14 days).
 
 ### 2.2 Batch
 

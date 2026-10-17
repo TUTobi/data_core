@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from data_core.db.models import CallerRequest, Case, SensorReading
 from data_core.geo import bounding_box, haversine_km
-from data_core.schemas.context import CallerHistoryEvidence, SensorEvidence, SimilarReport
+from data_core.schemas.context import CallerHistoryEvidence, SensorEvidence, SensorPoint, SimilarReport
 from data_core.timeutil import as_utc
 
 _QUALITY_RANK = {"ok": 0, "mocked": 1, "suspect": 2}
@@ -25,8 +25,10 @@ def nearby_sensor_evidence(
     now: datetime,
     metrics: list[str] | None = None,
     include_mocked: bool = True,
+    max_points: int = 500,
 ) -> list[SensorEvidence]:
-    """Aggregate readings per (sensor, metric) within radius and time window, nearest first.
+    """Aggregate readings per (sensor, metric) within radius and time window, nearest first, with the
+    most recent `max_points` raw readings attached.
     `include_mocked=False` drops readings flagged quality "mocked" (config.yaml sensors.mocked=false)."""
     min_lat, max_lat, min_lon, max_lon = bounding_box(lat, lon, radius_km)
     stmt = select(SensorReading).where(
@@ -66,6 +68,9 @@ def nearby_sensor_evidence(
                 distance_km=round(distance, 3),
                 age_s=int((now - latest_at).total_seconds()),
                 quality=max((r.quality for r, _ in items), key=lambda q: _QUALITY_RANK.get(q, 3)),
+                readings=[
+                    SensorPoint(t=as_utc(r.recorded_at), value=r.value) for r, _ in items[-max_points:]
+                ] if max_points > 0 else [],
             )
         )
     evidence.sort(key=lambda e: (e.distance_km, e.sensor_id, e.metric))
@@ -83,6 +88,7 @@ def similar_reports(
     filters: dict[str, Any] | None = None,
     limit: int = 50,
     include_mock: bool = True,
+    text_chars: int = 300,
 ) -> CallerHistoryEvidence:
     """Previous caller reports near the location, flagged when they share the problem type.
     `include_mock=False` drops demo calls (config.yaml caller_requests.mocked=false)."""
@@ -115,7 +121,7 @@ def similar_reports(
                 received_at=as_utc(other.received_at),
                 problem_type=other.problem_type,
                 crop=other.crop,
-                text=other.text[:300],
+                text=other.text[:text_chars],
                 distance_km=round(distance, 3),
                 same_problem_type=bool(request.problem_type) and other.problem_type == request.problem_type,
                 disease=recommendation.disease if recommendation else None,

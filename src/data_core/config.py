@@ -44,10 +44,14 @@ class Settings(BaseSettings):
     geocoding_country_code: str = ""  # ISO-3166 alpha-2, narrows place-name lookups (e.g. "KE")
 
     # --- core / planner (strategy: config.yaml) ------------------------------
-    default_radius_km: float = 10.0
-    default_lookback_h: int = 72
+    default_radius_km: float = 50.0
+    default_lookback_h: int = 336  # 14 days
     default_forecast_h: int = 48
     max_case_attempts: int = 5
+    # Caps that keep the DecisionContext (and so the recommender's LLM prompt) bounded
+    max_similar_reports: int = 300
+    similar_report_text_chars: int = 1000
+    max_sensor_points: int = 500  # raw readings per sensor/metric, most recent kept
 
     # --- recommender (external system; mock or real: config.yaml) -----------
     recommender_url: str = ""  # full endpoint, e.g. http://recommender:8001/predict

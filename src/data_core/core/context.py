@@ -96,7 +96,7 @@ def _collect(session, need: DataNeed, req, evidence: Evidence, gaps, warnings, s
     elif need.source == "sensors":
         evidence.sensors = nearby_sensor_evidence(
             session, req.lat, req.lon, radius, lookback, now, need.metrics,
-            include_mocked=services.runtime.sensors.mocked,
+            include_mocked=services.runtime.sensors.mocked, max_points=settings.max_sensor_points,
         )
         if not evidence.sensors:
             gaps.append(f"No sensor readings within {radius:g} km in the last {lookback} h")
@@ -110,6 +110,7 @@ def _collect(session, need: DataNeed, req, evidence: Evidence, gaps, warnings, s
         evidence.caller_history = similar_reports(
             session, req, req.lat, req.lon, radius, lookback, now, need.filters,
             include_mock=services.runtime.caller_requests.mocked,
+            limit=settings.max_similar_reports, text_chars=settings.similar_report_text_chars,
         )
         if any(r.is_mock for r in evidence.caller_history.items):
             warnings.append("Some previous reports are demo/mock data")

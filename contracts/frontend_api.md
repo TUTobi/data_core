@@ -322,7 +322,7 @@ DataNeed = { source: "sensors" | "weather" | "caller_history";
              filters: object; priority: "required" | "optional"; reason: string }
 ```
 
-With the current defaults: weather (72 h back, 48 h forecast), sensors within 10 km over 72 h, caller history within 10 km over 72 h.
+With the current defaults: weather (336 h / 14 days back, 48 h forecast), sensors within 50 km over 336 h, caller history within 50 km over 336 h.
 
 **`evidence.weather`: `WeatherEvidence | null`** (`null` if the caller location is unknown or weather failed, in which case there is a gap entry)
 
@@ -379,7 +379,7 @@ These items contain a `request_id`, not a case id. To link to the earlier case, 
 
 **Possible `gaps` strings** (match on prefixes, the texts are not a formal enum):
 - `"Caller location unknown: weather, sensor and caller-history lookups skipped"`
-- `"No sensor readings within 10 km in the last 72 h"`
+- `"No sensor readings within 50 km in the last 336 h"`
 - `"<source> unavailable: <ErrorType>: <message>"` (e.g. weather API down)
 
 **Possible `warnings` strings:**
