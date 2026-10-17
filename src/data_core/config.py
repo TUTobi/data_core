@@ -35,6 +35,8 @@ class Settings(BaseSettings):
 
     # --- CORS (comma-separated browser origins allowed to call the API, e.g. the dashboard) ---
     cors_origins: str = "http://localhost:5173"
+    # Optional full-match regex for extra origins, e.g. every Vercel preview URL of the dashboard
+    cors_origin_regex: str = ""
 
     # --- weather / geocoding (mock or real: config.yaml) ------------------------
     weather_cache_ttl_s: int = 900
@@ -64,7 +66,8 @@ class Settings(BaseSettings):
         return {k.strip() for k in raw.split(",") if k.strip()}
 
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        # Browsers send origins without a trailing slash; tolerate one pasted from the address bar.
+        return [o.strip().rstrip("/") for o in self.cors_origins.split(",") if o.strip()]
 
 
 def running_on_vercel() -> bool:

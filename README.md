@@ -64,7 +64,7 @@ startup. `docker compose` uses [`config.docker.yaml`](config.docker.yaml) (real 
 The dashboard (`hackathon-dashboard`, React SPA) talks to this API directly from the browser.
 Full field-level reference for the frontend: [`contracts/frontend_api.md`](contracts/frontend_api.md).
 
-- **CORS:** add the dashboard's origin to `CORS_ORIGINS` (comma-separated; default `http://localhost:5173` for `vite dev`).
+- **CORS:** add the dashboard's origin to `CORS_ORIGINS` (comma-separated; default `http://localhost:5173` for `vite dev`). `CORS_ORIGIN_REGEX` additionally allows every matching origin (e.g. all Vercel preview URLs of the dashboard).
 - **Auth:** send a `DASHBOARD_KEYS` value as the `X-API-Key` header. It ships in the JS bundle, so treat it as a demo key, not a secret.
 - **Updates:** poll `GET /v1/cases`. The `DASHBOARD_WEBHOOK_URL` push doesn't apply to a browser app (it can't receive POSTs).
 

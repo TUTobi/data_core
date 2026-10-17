@@ -59,3 +59,21 @@ def test_cors_preflight_allows_configured_origin(make_client):
 
     r = client.options("/v1/cases", headers={"Origin": "https://evil.example", **preflight})
     assert "access-control-allow-origin" not in r.headers
+
+
+def test_cors_origin_regex_allows_preview_urls(make_client):
+    client = make_client(
+        cors_origins="https://dash.example/",
+        cors_origin_regex=r"https://dash-[a-z0-9]+-team\.vercel\.app",
+    )
+    preflight = {"Access-Control-Request-Method": "GET", "Access-Control-Request-Headers": "x-api-key"}
+
+    for origin in ("https://dash.example", "https://dash-me6vglldc-team.vercel.app"):
+        r = client.options("/v1/cases", headers={"Origin": origin, **preflight})
+        assert r.status_code == 200
+        assert r.headers["access-control-allow-origin"] == origin
+
+    # The regex must match the whole origin, not just a prefix.
+    for origin in ("https://dash-abc-team.vercel.app.evil.example", "https://dash-abc-other.vercel.app"):
+        r = client.options("/v1/cases", headers={"Origin": origin, **preflight})
+        assert "access-control-allow-origin" not in r.headers

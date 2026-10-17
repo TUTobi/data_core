@@ -1,0 +1,166 @@
+- generic [ref=f5e3]:
+  - link "Skip to content" [ref=f5e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=f5e5]:
+    - generic [ref=f5e6]:
+      - link "Farmer Assistance MONITORING DASHBOARD" [ref=f5e7] [cursor=pointer]:
+        - /url: "#/overview"
+        - generic [ref=f5e12]:
+          - text: Farmer Assistance
+          - generic [ref=f5e13]: MONITORING DASHBOARD
+      - generic [ref=f5e14]: REST API mode
+    - navigation "Main navigation" [ref=f5e16]:
+      - generic [ref=f5e17]:
+        - link "Landing page" [ref=f5e18] [cursor=pointer]:
+          - /url: "#/overview"
+        - link "Call history" [ref=f5e19] [cursor=pointer]:
+          - /url: "#/calls"
+        - link "farmers data / charts" [ref=f5e20] [cursor=pointer]:
+          - /url: "#/analytics"
+  - main [active] [ref=f5e21]:
+    - generic [ref=f5e22]:
+      - generic [ref=f5e23]: Updates are retrieved from the selected data source.
+      - button "Refresh" [ref=f5e24] [cursor=pointer]
+    - generic [ref=f5e29]:
+      - generic [ref=f5e30]:
+        - generic [ref=f5e31]: MONITORING OVERVIEW
+        - heading "Landing page" [level=1] [ref=f5e32]
+        - paragraph [ref=f5e33]: Call activity, farmer-reported problems and environmental context.
+      - generic [ref=f5e37]:
+        - strong [ref=f5e38]: Last 30 days
+        - generic [ref=f5e39]: 30 days before retrieval
+    - generic [ref=f5e40]:
+      - generic [ref=f5e41]: Retrieved · 17 Oct 2026, 01:52 UTC
+      - generic [ref=f5e42]: Read-only REST data
+    - generic [ref=f5e43]:
+      - region [ref=f5e44]:
+        - generic [ref=f5e46]:
+          - generic [ref=f5e47]: GEOGRAPHIC OVERVIEW
+          - heading "Incoming request locations" [level=2] [ref=f5e48]
+          - paragraph [ref=f5e49]: Recent calls and messages
+        - generic [ref=f5e53]:
+          - generic [ref=f5e54]: 4 locations in 4 loaded records
+          - generic [ref=f5e55]: 4 total
+        - generic [ref=f5e56]:
+          - region "Interactive map of incoming request locations" [ref=f5e57]:
+            - generic:
+              - region "Map" [ref=f5e205]
+              - link "Call Insights for 8e71f15a046149d48593d7a2c7461523, Kakamega" [ref=f5e206] [cursor=pointer]:
+                - /url: "#/calls/8e71f15a046149d48593d7a2c7461523"
+              - link "Call Insights for 172b0a33c20b40d984d2047a10c86bc4, Nakuru" [ref=f5e208] [cursor=pointer]:
+                - /url: "#/calls/172b0a33c20b40d984d2047a10c86bc4"
+              - link "Call Insights for 9b040b9d493d488d914832e49d6d0fa7, Kiambu" [ref=f5e210] [cursor=pointer]:
+                - /url: "#/calls/9b040b9d493d488d914832e49d6d0fa7"
+              - link "Call Insights for a0ab307118c8447b857ee0c0a143d1d1, Eldoret" [ref=f5e212] [cursor=pointer]:
+                - /url: "#/calls/a0ab307118c8447b857ee0c0a143d1d1"
+            - generic:
+              - group [ref=f5e214]:
+                - link "Natural Earth" [ref=f5e216] [cursor=pointer]:
+                  - /url: https://www.naturalearthdata.com/
+              - generic [ref=f5e217]:
+                - button "Zoom in" [ref=f5e218] [cursor=pointer]
+                - button "Zoom out" [ref=f5e220] [cursor=pointer]
+          - generic [ref=f5e70]: Incoming requests · Select a pin for insights
+        - generic [ref=f5e72]: Processing status does not identify active phone calls. Project country coverage is not yet configured.
+        - group [ref=f5e73]:
+          - generic "Loaded request locations" [ref=f5e74] [cursor=pointer]
+      - region [ref=f5e75]:
+        - generic [ref=f5e77]:
+          - generic [ref=f5e78]: LAST 30 DAYS
+          - heading "Call & message statistics" [level=2] [ref=f5e79]
+        - generic [ref=f5e80]:
+          - article [ref=f5e81]:
+            - generic [ref=f5e82]: Incoming requests
+            - strong [ref=f5e88]: "4"
+            - paragraph [ref=f5e89]: Phone calls and messages received
+          - article [ref=f5e90]:
+            - generic [ref=f5e91]: Distinct callers
+            - strong [ref=f5e98]: "3"
+            - paragraph [ref=f5e99]: Individual callers in the period
+          - article [ref=f5e100]:
+            - generic [ref=f5e101]: Returning callers
+            - strong [ref=f5e108]: "1"
+            - paragraph [ref=f5e109]: Callers who called again
+      - generic [ref=f5e110]:
+        - region [ref=f5e111]:
+          - generic [ref=f5e113]:
+            - generic [ref=f5e114]: BACKEND WEATHER CONTEXT
+            - heading "Weather data" [level=2] [ref=f5e115]
+            - paragraph [ref=f5e116]: Current values at a reference location
+          - generic [ref=f5e122]:
+            - generic [ref=f5e123]:
+              - generic [ref=f5e124]:
+                - generic [ref=f5e125]: Reference location
+                - combobox "Reference location" [ref=f5e126] [cursor=pointer]:
+                  - option "Kakamega"
+                  - option "Nakuru" [selected]
+                  - option "Kiambu"
+                  - option "Eldoret"
+              - generic [ref=f5e127]:
+                - generic [ref=f5e128]: Parameter
+                - combobox "Parameter" [ref=f5e129] [cursor=pointer]:
+                  - option "Temperature at fetch time" [selected]
+                  - option "Relative humidity at fetch time"
+                  - option "Precipitation at fetch time"
+                  - option "Topsoil moisture"
+            - generic [ref=f5e131]:
+              - text: Nakuru
+              - generic [ref=f5e132]: 23.6°C
+              - paragraph [ref=f5e133]: Temperature at fetch time
+            - paragraph [ref=f5e134]: No daily series is supplied for this parameter.
+            - paragraph [ref=f5e135]: "Captured 17 Oct 2026, 01:49 UTC · Provider: mock · Synthetic weather"
+          - generic [ref=f5e136]: Location-specific data, not a country average. Parameter availability follows the backend response.
+        - region [ref=f5e137]:
+          - generic [ref=f5e139]:
+            - generic [ref=f5e140]: SENSOR REGISTRY
+            - heading "Sensor coverage" [level=2] [ref=f5e141]
+            - paragraph [ref=f5e142]: Registered locations and last contact
+          - generic [ref=f5e150]:
+            - generic [ref=f5e151]: Country
+            - combobox "Country" [disabled] [ref=f5e152]:
+              - option "Country mapping not configured" [selected]
+          - generic [ref=f5e153]:
+            - region "Map of registered sensor locations" [ref=f5e154]:
+              - region "Map" [ref=f5e222]
+              - generic:
+                - group [ref=f5e227]:
+                  - link "Natural Earth" [ref=f5e229] [cursor=pointer]:
+                    - /url: https://www.naturalearthdata.com/
+                - generic [ref=f5e230]:
+                  - button "Zoom in" [ref=f5e231] [cursor=pointer]
+                  - button "Zoom out" [ref=f5e233] [cursor=pointer]
+            - generic [ref=f5e165]: Registered sensor locations
+          - list [ref=f5e167]:
+            - listitem [ref=f5e168]:
+              - strong [ref=f5e169]: arduino-uno-r4-rain
+              - generic [ref=f5e170]: Last seen 17 Oct 2026, 00:08 UTC
+              - generic [ref=f5e171]: Coordinates unavailable
+            - listitem [ref=f5e172]:
+              - strong [ref=f5e173]: pi-test-01
+              - generic [ref=f5e174]: Last seen 16 Oct 2026, 22:58 UTC
+            - listitem [ref=f5e175]:
+              - strong [ref=f5e176]: zz-live-check
+              - generic [ref=f5e177]: Last seen 17 Oct 2026, 01:49 UTC
+          - generic [ref=f5e178]: Last contact is shown without assuming that a sensor is working or online.
+      - region [ref=f5e179]:
+        - generic [ref=f5e181]:
+          - generic [ref=f5e182]: LAST 30 DAYS
+          - heading "Reported farmer problems" [level=2] [ref=f5e183]
+          - paragraph [ref=f5e184]: Grouped by stated concern
+        - generic [ref=f5e185]:
+          - generic [ref=f5e186]:
+            - generic [ref=f5e187]: PROBLEM CATEGORY
+            - generic [ref=f5e188]: REQUESTS
+          - generic [ref=f5e189]:
+            - generic [ref=f5e190]:
+              - paragraph [ref=f5e194]: other
+              - paragraph [ref=f5e198]: crop health
+              - paragraph [ref=f5e238]: pests
+            - generic [ref=f5e199]:
+              - paragraph [ref=f5e201]: "2"
+              - paragraph [ref=f5e203]: "1"
+              - paragraph [ref=f5e240]: "1"
+        - generic [ref=f5e204]: Farmer-reported concerns, not confirmed diagnoses.
+  - contentinfo [ref=f5e26]:
+    - generic [ref=f5e27]: Farmer Assistance Dashboard
+    - generic [ref=f5e28]: Read-only access · Record provenance shown in each view

@@ -1,0 +1,27 @@
+- generic [ref=f1e3]:
+  - link "Skip to content" [ref=f1e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=f1e5]:
+    - generic [ref=f1e6]:
+      - link "Farmer Assistance MONITORING DASHBOARD" [ref=f1e7] [cursor=pointer]:
+        - /url: "#/overview"
+        - generic [ref=f1e12]:
+          - text: Farmer Assistance
+          - generic [ref=f1e13]: MONITORING DASHBOARD
+      - generic [ref=f1e14]: REST API mode
+    - navigation "Main navigation" [ref=f1e16]:
+      - generic [ref=f1e17]:
+        - link "Landing page" [ref=f1e18] [cursor=pointer]:
+          - /url: "#/overview"
+        - link "Call history" [ref=f1e19] [cursor=pointer]:
+          - /url: "#/calls"
+        - link "farmers data / charts" [ref=f1e20] [cursor=pointer]:
+          - /url: "#/analytics"
+  - main [active] [ref=f1e21]:
+    - generic [ref=f1e22]:
+      - generic [ref=f1e23]: Loading…
+      - button "Refresh" [disabled] [ref=f1e24]
+    - status [ref=f1e25]: Loading dashboard data…
+  - contentinfo [ref=f1e26]:
+    - generic [ref=f1e27]: Farmer Assistance Dashboard
+    - generic [ref=f1e28]: Read-only access · Record provenance shown in each view

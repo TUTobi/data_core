@@ -1,0 +1,73 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: Anticipatory Action Builder
+        - generic [ref=e12]: From “we knew” to “we acted”
+      - generic [ref=e13]: Demo · simulated data
+      - navigation "Main" [ref=e14]:
+        - button "1 · Configure" [ref=e15]
+        - button "2 · Monitor" [disabled] [ref=e16]
+        - button "3 · Execute" [disabled] [ref=e17]
+        - button "Audit log" [ref=e18]
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e22]:
+        - heading "Set up an anticipatory action plan" [level=1] [ref=e23]
+        - paragraph [ref=e24]: No code, no GIS. Decide now what should happen before the next crisis.
+      - list "Steps" [ref=e25]:
+        - listitem [ref=e26]:
+          - button "1 Region" [ref=e27]:
+            - generic [ref=e28]: "1"
+            - text: Region
+        - listitem [ref=e29]:
+          - button "2 Signals & thresholds" [disabled] [ref=e30]:
+            - generic [ref=e31]: "2"
+            - text: Signals & thresholds
+        - listitem [ref=e32]:
+          - button "3 Pre-agreed action" [disabled] [ref=e33]:
+            - generic [ref=e34]: "3"
+            - text: Pre-agreed action
+        - listitem [ref=e35]:
+          - button "4 Review & activate" [disabled] [ref=e36]:
+            - generic [ref=e37]: "4"
+            - text: Review & activate
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - heading "Where do you work?" [level=2] [ref=e41]
+          - paragraph [ref=e42]: Pick the area your country office is responsible for.
+          - group "Region" [ref=e43]:
+            - generic [ref=e45] [cursor=pointer]:
+              - radio "Marsabit · Kenya Arid north — pastoralist herders, highly exposed to failed rains" [checked] [ref=e46]
+              - generic [ref=e47]:
+                - generic [ref=e48]:
+                  - text: Marsabit
+                  - generic [ref=e49]: · Kenya
+                - generic [ref=e50]: Arid north — pastoralist herders, highly exposed to failed rains
+            - generic [ref=e51] [cursor=pointer]:
+              - radio "Somali Region · Ethiopia Lowland rangelands — livestock-dependent households" [ref=e52]
+              - generic [ref=e53]:
+                - generic [ref=e54]:
+                  - text: Somali Region
+                  - generic [ref=e55]: · Ethiopia
+                - generic [ref=e56]: Lowland rangelands — livestock-dependent households
+            - generic [ref=e57] [cursor=pointer]:
+              - radio "Bay · Somalia Agro-pastoral breadbasket — sorghum and livestock" [ref=e58]
+              - generic [ref=e59]:
+                - generic [ref=e60]:
+                  - text: Bay
+                  - generic [ref=e61]: · Somalia
+                - generic [ref=e62]: Agro-pastoral breadbasket — sorghum and livestock
+        - figure "Marsabit, Kenya Schematic map, not to scale" [ref=e63]:
+          - img "Schematic map highlighting Marsabit" [ref=e64]:
+            - generic [ref=e65]: ETHIOPIA
+            - generic [ref=e68]: SOMALIA
+            - generic [ref=e71]: KENYA
+          - generic [ref=e77]:
+            - text: Marsabit, Kenya
+            - generic [ref=e78]: Schematic map, not to scale
+      - generic [ref=e79]:
+        - button "Back" [disabled] [ref=e80]
+        - button "Next" [ref=e81]
+  - contentinfo [ref=e84]:
+    - paragraph [ref=e85]: Demo prototype for ideation. All data, names, phone numbers and amounts are fictional. No real data sources, blockchain or payments are used.

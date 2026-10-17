@@ -44,6 +44,7 @@ Normal requests never wait for it. On Hobby, a failed delivery is therefore retr
    | `CREATE_TABLES_ON_STARTUP` | `false` (schema comes from Alembic) |
    | `PI_KEYS`, `INPUT_KEYS`, `DASHBOARD_KEYS`, `INTERNAL_KEYS` | long random strings (`python -c "import secrets; print(secrets.token_urlsafe(32))"`) |
    | `CORS_ORIGINS` | the dashboard's URL(s), comma-separated, e.g. `https://<dashboard>.vercel.app,http://localhost:5173` |
+   | `CORS_ORIGIN_REGEX` | optional; also allows every origin matching this regex, e.g. all dashboard preview URLs: `https://hackathon-dashboard-[a-z0-9-]+-hackathon-x1\.vercel\.app` |
    | `CRON_SECRET` | **the same value as one of the `INTERNAL_KEYS`**. Vercel Cron sends it as `Authorization: Bearer …` |
    | `WEBHOOK_SECRET` | random string; share it with the dashboard and phone teams |
    | `RECOMMENDER_URL` | `https://recommendation-engine-2.vercel.app/analyze` (needed while `config.yaml` sets `recommender.mocked: false`) |

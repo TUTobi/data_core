@@ -1,0 +1,13 @@
+- generic [ref=f2e31]:
+  - generic [ref=f2e32]: "[plugin:vite:import-analysis] Failed to resolve import \"maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url\" from \"src/components/maps/FieldMap.tsx\". Does the file exist?"
+  - generic [ref=f2e33]: C:/Users/tobih/OneDrive/CER Master/Hackathon/hackathon-dashboard/src/components/maps/FieldMap.tsx:3:22
+  - generic [ref=f2e34]: "1 | import { useEffect, useMemo, useRef, useState } from \"react\"; 2 | import * as maplibregl from \"maplibre-gl\"; 3 | import workerUrl from \"maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url\"; | ^ 4 | import { MapPin } from \"lucide-react\"; 5 | import \"maplibre-gl/dist/maplibre-gl.css\";"
+  - generic [ref=f2e35]: at TransformPluginContext._formatLog (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:8766:39) at TransformPluginContext.error (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:8763:14) at normalizeUrl (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:26632:18) at async file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:26702:30 at async Promise.all (index 2) at async TransformPluginContext.transform (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:26668:4) at async EnvironmentPluginContainer.transform (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:8545:14) at async loadAndTransform (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:20184:26) at async viteTransformMiddleware (file:///C:/Users/tobih/OneDrive/CER%20Master/Hackathon/hackathon-dashboard/node_modules/vite/dist/node/chunks/node.js:20404:20)
+  - generic [ref=f2e36]:
+    - text: Click outside, press Esc key, or fix the code to dismiss.You can also disable this overlay by setting
+    - code [ref=f2e37]: server.hmr.overlay
+    - text: to
+    - code [ref=f2e38]: "false"
+    - text: in
+    - code [ref=f2e39]: vite.config.ts
+    - text: .

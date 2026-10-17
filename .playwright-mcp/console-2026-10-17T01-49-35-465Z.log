@@ -1,0 +1,41 @@
+[     334ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom-du-XaUz4.js?v=9ac898a7:17221
+[    6449ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5174/src/components/maps/FieldMap.tsx:0
+[   13255ms] Failed to fetch dynamically imported module: http://localhost:5174/src/components/maps/FieldMap.tsx
+[   15023ms] Failed to fetch dynamically imported module: http://localhost:5174/src/components/maps/FieldMap.tsx
+[   15100ms] Failed to fetch dynamically imported module: http://localhost:5174/src/components/maps/FieldMap.tsx
+[   15101ms] Failed to fetch dynamically imported module: http://localhost:5174/src/components/maps/FieldMap.tsx
+[   15359ms] Failed to fetch dynamically imported module: http://localhost:5174/src/components/maps/FieldMap.tsx
+[   15610ms] [ERROR] The above error occurred in one of your React components:
+
+    at Lazy
+    at Suspense
+    at section
+    at CallerMap (http://localhost:5174/src/features/overview/CallerMap.tsx:7:29)
+    at div
+    at OverviewPage (http://localhost:5174/src/features/overview/OverviewPage.tsx:9:32)
+    at Suspense
+    at main
+    at div
+    at AppShell (http://localhost:5174/src/components/layout/AppShell.tsx:19:28)
+    at App (http://localhost:5174/src/App.tsx:16:26)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/@vite/client:356
+[   15613ms] [ERROR] The above error occurred in one of your React components:
+
+    at Lazy
+    at Suspense
+    at section
+    at SensorCoveragePanel (http://localhost:5174/src/features/overview/SensorCoveragePanel.tsx:9:39)
+    at div
+    at div
+    at OverviewPage (http://localhost:5174/src/features/overview/OverviewPage.tsx:9:32)
+    at Suspense
+    at main
+    at div
+    at AppShell (http://localhost:5174/src/components/layout/AppShell.tsx:19:28)
+    at App (http://localhost:5174/src/App.tsx:16:26)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:5174/@vite/client:356
+[   15671ms] Failed to fetch dynamically imported module: http://localhost:5174/src/components/maps/FieldMap.tsx
